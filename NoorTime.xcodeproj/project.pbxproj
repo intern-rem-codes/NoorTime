@@ -227,7 +227,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = MC5BRPXH7V;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = NoorTimeWidget-Info.plist;
+				INFOPLIST_FILE = "NoorTimeWidget-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -254,7 +254,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = MC5BRPXH7V;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = NoorTimeWidget-Info.plist;
+				INFOPLIST_FILE = "NoorTimeWidget-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

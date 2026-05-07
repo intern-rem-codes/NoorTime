@@ -88,7 +88,8 @@ enum AppStrings {
         // Lightweight fallback localization until a proper strings system is added.
         // If a key isn't known, show a friendly title-cased version.
         if let known = knownStrings[lang]?[key] { return known }
-        return key
+        return
+            key
             .replacingOccurrences(of: "_", with: " ")
             .replacingOccurrences(of: "label ", with: "")
             .replacingOccurrences(of: "settings ", with: "")
@@ -104,7 +105,8 @@ enum AppStrings {
         }
     }
 
-    static func prayerSource(_ source: NoorSettings.PrayerDataSource, _ lang: AppLanguage) -> String {
+    static func prayerSource(_ source: NoorSettings.PrayerDataSource, _ lang: AppLanguage) -> String
+    {
         switch (lang, source) {
         case (.english, .auto): return "Auto"
         case (.english, .local): return "Local"
@@ -159,6 +161,7 @@ enum AppStrings {
             "label_prayers": "Prayers",
             "label_timeline": "Timeline",
             "location_needed": "Location needed",
+            "card_small_prayer_times_today": "Small Prayer Times Today",
         ],
         .arabic: [
             "settings_title": "الإعدادات",
@@ -192,6 +195,7 @@ enum AppStrings {
             "label_prayers": "صلوات",
             "label_timeline": "الجدول",
             "location_needed": "يلزم تحديد الموقع",
+            "card_small_prayer_times_today": "مواقيت الصلاة الصغيرة",
         ],
     ]
 }
@@ -297,203 +301,221 @@ struct PrayerTimesData {
 }
 
 #if os(iOS)
-final class PrayerTimesViewModel: NSObject, ObservableObject {
-    @Published var data: PrayerTimesData?
-    @Published var locationName: String = ""
-    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
-    @Published var now: Date = .now
+    final class PrayerTimesViewModel: NSObject, ObservableObject {
+        @Published var data: PrayerTimesData?
+        @Published var locationName: String = ""
+        @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
+        @Published var now: Date = .now
 
-    private let settings: NoorSettings
-    private let locationManager = CLLocationManager()
-    private var cancellables: Set<AnyCancellable> = []
+        private let settings: NoorSettings
+        private let locationManager = CLLocationManager()
+        private var cancellables: Set<AnyCancellable> = []
 
-
-    private func degreesToRadians(_ degrees: Double) -> Double {
-        degrees * .pi / 180.0
-    }
-
-    private func radiansToDegrees(_ radians: Double) -> Double {
-        radians * 180.0 / .pi
-    }
-
-    private func minuteOffsetDate(_ minutes: Double, from day: Date, timeZone: TimeZone) -> Date {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeZone
-        let start = calendar.startOfDay(for: day)
-        return start.addingTimeInterval(minutes * 60.0)
-    }
-
-    private func solarGeometry(
-        for day: Date,
-        latitude: Double,
-        longitude: Double,
-        timeZone: TimeZone
-    ) -> (declination: Double, equationOfTime: Double, solarNoon: Double)? {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeZone
-
-        guard let dayOfYear = calendar.ordinality(of: .day, in: .year, for: day) else {
-            return nil
+        private func degreesToRadians(_ degrees: Double) -> Double {
+            degrees * .pi / 180.0
         }
 
-        let gamma = 2.0 * Double.pi / 365.0 * (Double(dayOfYear) - 1.0)
-        let equationOfTime = 229.18
-            * (0.000075
-                + 0.001868 * cos(gamma)
-                - 0.032077 * sin(gamma)
-                - 0.014615 * cos(2.0 * gamma)
-                - 0.040849 * sin(2.0 * gamma))
-        let declination = 0.006918
-            - 0.399912 * cos(gamma)
-            + 0.070257 * sin(gamma)
-            - 0.006758 * cos(2.0 * gamma)
-            + 0.000907 * sin(2.0 * gamma)
-            - 0.002697 * cos(3.0 * gamma)
-            + 0.00148 * sin(3.0 * gamma)
-
-        let tzOffsetMinutes = Double(timeZone.secondsFromGMT(for: day)) / 60.0
-        let solarNoon = 720.0 - 4.0 * longitude - equationOfTime + tzOffsetMinutes
-        _ = latitude
-        return (declination, equationOfTime, solarNoon)
-    }
-
-    private func hourAngleDegrees(
-        latitude: Double,
-        declination: Double,
-        zenithDegrees: Double
-    ) -> Double? {
-        let latitudeRad = degreesToRadians(latitude)
-        let zenithRad = degreesToRadians(zenithDegrees)
-
-        let numerator = cos(zenithRad) - sin(latitudeRad) * sin(declination)
-        let denominator = cos(latitudeRad) * cos(declination)
-        guard denominator != 0 else { return nil }
-
-        let raw = numerator / denominator
-        guard raw >= -1.0, raw <= 1.0 else { return nil }
-
-        return radiansToDegrees(acos(raw))
-    }
-
-    private func solarTimeData(
-        for day: Date,
-        latitude: Double,
-        longitude: Double,
-        timeZone: TimeZone
-    ) -> (fajr: Date, sunrise: Date, dhuhr: Date, asr: Date, maghrib: Date, isha: Date)? {
-        guard let geometry = solarGeometry(
-            for: day,
-            latitude: latitude,
-            longitude: longitude,
-            timeZone: timeZone
-        ) else {
-            return nil
+        private func radiansToDegrees(_ radians: Double) -> Double {
+            radians * 180.0 / .pi
         }
 
-        guard let sunriseHA = hourAngleDegrees(
-            latitude: latitude,
-            declination: geometry.declination,
-            zenithDegrees: 90.833
-        ) else {
-            return nil
+        private func minuteOffsetDate(_ minutes: Double, from day: Date, timeZone: TimeZone) -> Date
+        {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = timeZone
+            let start = calendar.startOfDay(for: day)
+            return start.addingTimeInterval(minutes * 60.0)
         }
 
-        let sunrise = geometry.solarNoon - 4.0 * sunriseHA
-        let sunset = geometry.solarNoon + 4.0 * sunriseHA
-        let dhuhr = geometry.solarNoon
+        private func solarGeometry(
+            for day: Date,
+            latitude: Double,
+            longitude: Double,
+            timeZone: TimeZone
+        ) -> (declination: Double, equationOfTime: Double, solarNoon: Double)? {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = timeZone
 
-        let fajrHA = hourAngleDegrees(
-            latitude: latitude,
-            declination: geometry.declination,
-            zenithDegrees: 108.0
-        )
-        let ishaHA = hourAngleDegrees(
-            latitude: latitude,
-            declination: geometry.declination,
-            zenithDegrees: 107.0
-        )
+            guard let dayOfYear = calendar.ordinality(of: .day, in: .year, for: day) else {
+                return nil
+            }
 
-        let fajr = (fajrHA.map { dhuhr - 4.0 * $0 }) ?? (sunrise - 90.0)
-        let isha = (ishaHA.map { dhuhr + 4.0 * $0 }) ?? (sunset + 90.0)
+            let gamma = 2.0 * Double.pi / 365.0 * (Double(dayOfYear) - 1.0)
+            let equationOfTime =
+                229.18
+                * (0.000075
+                    + 0.001868 * cos(gamma)
+                    - 0.032077 * sin(gamma)
+                    - 0.014615 * cos(2.0 * gamma)
+                    - 0.040849 * sin(2.0 * gamma))
+            let declination =
+                0.006918
+                - 0.399912 * cos(gamma)
+                + 0.070257 * sin(gamma)
+                - 0.006758 * cos(2.0 * gamma)
+                + 0.000907 * sin(2.0 * gamma)
+                - 0.002697 * cos(3.0 * gamma)
+                + 0.00148 * sin(3.0 * gamma)
 
-        let latitudeRad = degreesToRadians(latitude)
-        let shadowAngle = atan(1.0 / (1.0 + tan(abs(latitudeRad - geometry.declination))))
-        let asrZenith = 90.0 - radiansToDegrees(shadowAngle)
-        let asrHA = hourAngleDegrees(
-            latitude: latitude,
-            declination: geometry.declination,
-            zenithDegrees: asrZenith
-        )
-        let asr = (asrHA.map { dhuhr + 4.0 * $0 }) ?? ((dhuhr + sunset) / 2.0)
-
-        return (
-            fajr: minuteOffsetDate(fajr, from: day, timeZone: timeZone),
-            sunrise: minuteOffsetDate(sunrise, from: day, timeZone: timeZone),
-            dhuhr: minuteOffsetDate(dhuhr, from: day, timeZone: timeZone),
-            asr: minuteOffsetDate(asr, from: day, timeZone: timeZone),
-            maghrib: minuteOffsetDate(sunset, from: day, timeZone: timeZone),
-            isha: minuteOffsetDate(isha, from: day, timeZone: timeZone)
-        )
-    }
-
-    init(settings: NoorSettings) {
-        self.settings = settings
-        super.init()
-
-        locationManager.delegate = self
-        authorizationStatus = locationManager.authorizationStatus
-
-        Timer.publish(every: 1, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] in self?.now = $0 }
-            .store(in: &cancellables)
-
-        // Prime from defaults if present (avoids empty UI on first launch).
-        let defaults = NoorSharedDefaults.shared
-        locationName = defaults.string(forKey: NoorSharedKeys.lastLocationName) ?? ""
-
-        requestLocationIfNeeded()
-        refreshIfNeeded(force: true)
-    }
-
-    func requestLocationIfNeeded() {
-        guard settings.locationMode == .automatic else { return }
-
-        // Avoid a runtime crash if the usage description isn't configured.
-        let hasUsage = (Bundle.main.object(forInfoDictionaryKey: "NSLocationWhenInUseUsageDescription") as? String)?.isEmpty == false
-        guard hasUsage else { return }
-
-        switch authorizationStatus {
-        case .notDetermined:
-            locationManager.requestWhenInUseAuthorization()
-        case .authorizedAlways, .authorizedWhenInUse:
-            locationManager.requestLocation()
-        default:
-            break
+            let tzOffsetMinutes = Double(timeZone.secondsFromGMT(for: day)) / 60.0
+            let solarNoon = 720.0 - 4.0 * longitude - equationOfTime + tzOffsetMinutes
+            _ = latitude
+            return (declination, equationOfTime, solarNoon)
         }
-    }
 
-    func applyManualLocation() {
-        settings.locationMode = .manual
+        private func hourAngleDegrees(
+            latitude: Double,
+            declination: Double,
+            zenithDegrees: Double
+        ) -> Double? {
+            let latitudeRad = degreesToRadians(latitude)
+            let zenithRad = degreesToRadians(zenithDegrees)
 
-        let city = settings.manualCity.trimmingCharacters(in: .whitespacesAndNewlines)
-        let country = settings.manualCountry.trimmingCharacters(in: .whitespacesAndNewlines)
-        let name = [city, country].filter { !$0.isEmpty }.joined(separator: ", ")
-        locationName = name.isEmpty ? "Manual location" : name
+            let numerator = cos(zenithRad) - sin(latitudeRad) * sin(declination)
+            let denominator = cos(latitudeRad) * cos(declination)
+            guard denominator != 0 else { return nil }
 
-        let defaults = NoorSharedDefaults.shared
-        defaults.set(locationName, forKey: NoorSharedKeys.lastLocationName)
+            let raw = numerator / denominator
+            guard raw >= -1.0, raw <= 1.0 else { return nil }
 
-        // Best effort geocoding for manual city/country.
-        let query = locationName
-        Task {
-            do {
-                let placemarks = try await CLGeocoder().geocodeAddressString(query)
-                if let location = placemarks.first?.location {
-                    defaults.set(location.coordinate.latitude, forKey: NoorSharedKeys.lastLatitude)
-                    defaults.set(location.coordinate.longitude, forKey: NoorSharedKeys.lastLongitude)
-                } else {
-                    // Fall back to a safe default if we have no coordinates yet.
+            return radiansToDegrees(acos(raw))
+        }
+
+        private func solarTimeData(
+            for day: Date,
+            latitude: Double,
+            longitude: Double,
+            timeZone: TimeZone
+        ) -> (fajr: Date, sunrise: Date, dhuhr: Date, asr: Date, maghrib: Date, isha: Date)? {
+            guard
+                let geometry = solarGeometry(
+                    for: day,
+                    latitude: latitude,
+                    longitude: longitude,
+                    timeZone: timeZone
+                )
+            else {
+                return nil
+            }
+
+            guard
+                let sunriseHA = hourAngleDegrees(
+                    latitude: latitude,
+                    declination: geometry.declination,
+                    zenithDegrees: 90.833
+                )
+            else {
+                return nil
+            }
+
+            let sunrise = geometry.solarNoon - 4.0 * sunriseHA
+            let sunset = geometry.solarNoon + 4.0 * sunriseHA
+            let dhuhr = geometry.solarNoon
+
+            let fajrHA = hourAngleDegrees(
+                latitude: latitude,
+                declination: geometry.declination,
+                zenithDegrees: 108.0
+            )
+            let ishaHA = hourAngleDegrees(
+                latitude: latitude,
+                declination: geometry.declination,
+                zenithDegrees: 107.0
+            )
+
+            let fajr = (fajrHA.map { dhuhr - 4.0 * $0 }) ?? (sunrise - 90.0)
+            let isha = (ishaHA.map { dhuhr + 4.0 * $0 }) ?? (sunset + 90.0)
+
+            let latitudeRad = degreesToRadians(latitude)
+            let shadowAngle = atan(1.0 / (1.0 + tan(abs(latitudeRad - geometry.declination))))
+            let asrZenith = 90.0 - radiansToDegrees(shadowAngle)
+            let asrHA = hourAngleDegrees(
+                latitude: latitude,
+                declination: geometry.declination,
+                zenithDegrees: asrZenith
+            )
+            let asr = (asrHA.map { dhuhr + 4.0 * $0 }) ?? ((dhuhr + sunset) / 2.0)
+
+            return (
+                fajr: minuteOffsetDate(fajr, from: day, timeZone: timeZone),
+                sunrise: minuteOffsetDate(sunrise, from: day, timeZone: timeZone),
+                dhuhr: minuteOffsetDate(dhuhr, from: day, timeZone: timeZone),
+                asr: minuteOffsetDate(asr, from: day, timeZone: timeZone),
+                maghrib: minuteOffsetDate(sunset, from: day, timeZone: timeZone),
+                isha: minuteOffsetDate(isha, from: day, timeZone: timeZone)
+            )
+        }
+
+        init(settings: NoorSettings) {
+            self.settings = settings
+            super.init()
+
+            locationManager.delegate = self
+            authorizationStatus = locationManager.authorizationStatus
+
+            Timer.publish(every: 1, on: .main, in: .common)
+                .autoconnect()
+                .sink { [weak self] in self?.now = $0 }
+                .store(in: &cancellables)
+
+            // Prime from defaults if present (avoids empty UI on first launch).
+            let defaults = NoorSharedDefaults.shared
+            locationName = defaults.string(forKey: NoorSharedKeys.lastLocationName) ?? ""
+
+            requestLocationIfNeeded()
+            refreshIfNeeded(force: true)
+        }
+
+        func requestLocationIfNeeded() {
+            guard settings.locationMode == .automatic else { return }
+
+            // Avoid a runtime crash if the usage description isn't configured.
+            let hasUsage =
+                (Bundle.main.object(forInfoDictionaryKey: "NSLocationWhenInUseUsageDescription")
+                as? String)?.isEmpty == false
+            guard hasUsage else { return }
+
+            switch authorizationStatus {
+            case .notDetermined:
+                locationManager.requestWhenInUseAuthorization()
+            case .authorizedAlways, .authorizedWhenInUse:
+                locationManager.requestLocation()
+            default:
+                break
+            }
+        }
+
+        func applyManualLocation() {
+            settings.locationMode = .manual
+
+            let city = settings.manualCity.trimmingCharacters(in: .whitespacesAndNewlines)
+            let country = settings.manualCountry.trimmingCharacters(in: .whitespacesAndNewlines)
+            let name = [city, country].filter { !$0.isEmpty }.joined(separator: ", ")
+            locationName = name.isEmpty ? "Manual location" : name
+
+            let defaults = NoorSharedDefaults.shared
+            defaults.set(locationName, forKey: NoorSharedKeys.lastLocationName)
+
+            // Best effort geocoding for manual city/country.
+            let query = locationName
+            Task {
+                do {
+                    let placemarks = try await CLGeocoder().geocodeAddressString(query)
+                    if let location = placemarks.first?.location {
+                        defaults.set(
+                            location.coordinate.latitude, forKey: NoorSharedKeys.lastLatitude)
+                        defaults.set(
+                            location.coordinate.longitude, forKey: NoorSharedKeys.lastLongitude)
+                    } else {
+                        // Fall back to a safe default if we have no coordinates yet.
+                        if defaults.double(forKey: NoorSharedKeys.lastLatitude) == 0,
+                            defaults.double(forKey: NoorSharedKeys.lastLongitude) == 0
+                        {
+                            defaults.set(52.3676, forKey: NoorSharedKeys.lastLatitude)
+                            defaults.set(4.9041, forKey: NoorSharedKeys.lastLongitude)
+                        }
+                    }
+                } catch {
                     if defaults.double(forKey: NoorSharedKeys.lastLatitude) == 0,
                         defaults.double(forKey: NoorSharedKeys.lastLongitude) == 0
                     {
@@ -501,116 +523,118 @@ final class PrayerTimesViewModel: NSObject, ObservableObject {
                         defaults.set(4.9041, forKey: NoorSharedKeys.lastLongitude)
                     }
                 }
-            } catch {
-                if defaults.double(forKey: NoorSharedKeys.lastLatitude) == 0,
-                    defaults.double(forKey: NoorSharedKeys.lastLongitude) == 0
-                {
-                    defaults.set(52.3676, forKey: NoorSharedKeys.lastLatitude)
-                    defaults.set(4.9041, forKey: NoorSharedKeys.lastLongitude)
+
+                await MainActor.run {
+                    self.refreshIfNeeded(force: true)
                 }
             }
+        }
 
-            await MainActor.run {
-                self.refreshIfNeeded(force: true)
+        func refreshIfNeeded(force: Bool) {
+            let today = Calendar.current.startOfDay(for: Date())
+            if !force, let existing = data,
+                Calendar.current.isDate(existing.date, inSameDayAs: today)
+            {
+                return
+            }
+
+            let defaults = NoorSharedDefaults.shared
+            let lat = defaults.double(forKey: NoorSharedKeys.lastLatitude)
+            let lon = defaults.double(forKey: NoorSharedKeys.lastLongitude)
+
+            guard lat != 0 || lon != 0 else {
+                data = nil
+                requestLocationIfNeeded()
+                return
+            }
+
+            let timeZone = TimeZone.current
+            guard
+                let times = solarTimeData(
+                    for: today,
+                    latitude: lat,
+                    longitude: lon,
+                    timeZone: timeZone
+                )
+            else {
+                data = nil
+                return
+            }
+
+            data = PrayerTimesData(
+                date: today,
+                times: [
+                    .init(name: .fajr, time: times.fajr),
+                    .init(name: .sunrise, time: times.sunrise),
+                    .init(name: .dhuhr, time: times.dhuhr),
+                    .init(name: .asr, time: times.asr),
+                    .init(name: .maghrib, time: times.maghrib),
+                    .init(name: .isha, time: times.isha),
+                ]
+            )
+        }
+
+    }
+
+    extension PrayerTimesViewModel: CLLocationManagerDelegate {
+        func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+            authorizationStatus = manager.authorizationStatus
+            if authorizationStatus == .authorizedAlways
+                || authorizationStatus == .authorizedWhenInUse
+            {
+                manager.requestLocation()
             }
         }
-    }
 
+        func locationManager(
+            _ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]
+        ) {
+            guard let location = locations.last else { return }
 
-    func refreshIfNeeded(force: Bool) {
-        let today = Calendar.current.startOfDay(for: Date())
-        if !force, let existing = data, Calendar.current.isDate(existing.date, inSameDayAs: today) {
-            return
-        }
+            let defaults = NoorSharedDefaults.shared
+            defaults.set(location.coordinate.latitude, forKey: NoorSharedKeys.lastLatitude)
+            defaults.set(location.coordinate.longitude, forKey: NoorSharedKeys.lastLongitude)
 
-        let defaults = NoorSharedDefaults.shared
-        let lat = defaults.double(forKey: NoorSharedKeys.lastLatitude)
-        let lon = defaults.double(forKey: NoorSharedKeys.lastLongitude)
+            Task {
+                // Best-effort reverse geocode for a friendly label.
+                let placemark = (try? await CLGeocoder().reverseGeocodeLocation(location))?.first
+                let parts = [placemark?.locality, placemark?.country].compactMap { $0 }.filter {
+                    !$0.isEmpty
+                }
+                let resolvedName =
+                    parts.isEmpty
+                    ? String(
+                        format: "%.3f, %.3f", location.coordinate.latitude,
+                        location.coordinate.longitude)
+                    : parts.joined(separator: ", ")
 
-        guard lat != 0 || lon != 0 else {
-            data = nil
-            requestLocationIfNeeded()
-            return
-        }
+                defaults.set(resolvedName, forKey: NoorSharedKeys.lastLocationName)
 
-        let timeZone = TimeZone.current
-        guard let times = solarTimeData(
-            for: today,
-            latitude: lat,
-            longitude: lon,
-            timeZone: timeZone
-        ) else {
-            data = nil
-            return
-        }
-
-        data = PrayerTimesData(
-            date: today,
-            times: [
-                .init(name: .fajr, time: times.fajr),
-                .init(name: .sunrise, time: times.sunrise),
-                .init(name: .dhuhr, time: times.dhuhr),
-                .init(name: .asr, time: times.asr),
-                .init(name: .maghrib, time: times.maghrib),
-                .init(name: .isha, time: times.isha),
-            ]
-        )
-    }
-
-}
-
-extension PrayerTimesViewModel: CLLocationManagerDelegate {
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        authorizationStatus = manager.authorizationStatus
-        if authorizationStatus == .authorizedAlways || authorizationStatus == .authorizedWhenInUse {
-            manager.requestLocation()
-        }
-    }
-
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
-
-        let defaults = NoorSharedDefaults.shared
-        defaults.set(location.coordinate.latitude, forKey: NoorSharedKeys.lastLatitude)
-        defaults.set(location.coordinate.longitude, forKey: NoorSharedKeys.lastLongitude)
-
-        Task {
-            // Best-effort reverse geocode for a friendly label.
-            let placemark = (try? await CLGeocoder().reverseGeocodeLocation(location))?.first
-            let parts = [placemark?.locality, placemark?.country].compactMap { $0 }.filter { !$0.isEmpty }
-            let resolvedName = parts.isEmpty
-                ? String(format: "%.3f, %.3f", location.coordinate.latitude, location.coordinate.longitude)
-                : parts.joined(separator: ", ")
-
-            defaults.set(resolvedName, forKey: NoorSharedKeys.lastLocationName)
-
-            await MainActor.run {
-                self.locationName = resolvedName
-                self.refreshIfNeeded(force: true)
+                await MainActor.run {
+                    self.locationName = resolvedName
+                    self.refreshIfNeeded(force: true)
+                }
             }
         }
+
+        func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+            // Ignore for now; UI already handles missing data.
+        }
     }
-
-
-
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        // Ignore for now; UI already handles missing data.
-    }
-}
 #else
-final class PrayerTimesViewModel: ObservableObject {
-    @Published var data: PrayerTimesData?
-    @Published var locationName: String = ""
-    @Published var now: Date = .now
+    final class PrayerTimesViewModel: ObservableObject {
+        @Published var data: PrayerTimesData?
+        @Published var locationName: String = ""
+        @Published var now: Date = .now
 
-    init(settings: NoorSettings) {
-        _ = settings
+        init(settings: NoorSettings) {
+            _ = settings
+        }
+
+        func requestLocationIfNeeded() {}
+        func applyManualLocation() {}
+        func refreshIfNeeded(force: Bool) { _ = force }
     }
-
-    func requestLocationIfNeeded() {}
-    func applyManualLocation() {}
-    func refreshIfNeeded(force: Bool) { _ = force }
-}
 #endif
 
 struct WeatherSnapshot: Equatable {
@@ -749,7 +773,6 @@ struct Qibla {
         direction = bearing
     }
 }
-
 
 // MARK: - App Settings
 class NoorSettings: ObservableObject {
@@ -2521,6 +2544,10 @@ private struct PrayerFilterContentView: View {
             Card(title: AppStrings.t("card_prayer_times_today", appLang)) {
                 PrayerTimesFace()
             }
+            SmallWidgetCard(title: AppStrings.t("card_small_prayer_times_today", appLang)) {
+                SmallPrayerTimesFace()
+            }
+            .frame(width: 158)
             Card(title: AppStrings.t("card_next_prayer", appLang)) { NextPrayerFace() }
             Card(title: AppStrings.t("card_timeline", appLang)) { PrayerTimelineFace() }
 
@@ -2566,7 +2593,6 @@ private struct WeatherFilterContentView: View {
         }
     }
 }
-
 
 private func filterLabel(_ item: String, lang: AppLanguage) -> String {
     switch item {
@@ -3406,6 +3432,77 @@ struct PrayerTimesFace: View {
     }
 }
 
+struct SmallPrayerTimesFace: View {
+    @EnvironmentObject private var prayerModel: PrayerTimesViewModel
+    @Environment(\.appLanguage) private var appLanguage
+
+    private var locale: Locale {
+        appLanguage == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
+    }
+
+    private var timeFormat: NoorTimeFormatSetting {
+        NoorTimeFormatSetting.fromStorage(
+            NoorSharedDefaults.shared.string(forKey: NoorSharedKeys.timeFormat))
+    }
+
+    var body: some View {
+        let data = prayerModel.data
+        let date = data?.date ?? Date()
+
+        VStack(spacing: 4) {
+            HStack {
+                Text(AppStrings.t("label_prayer_times", appLanguage))
+                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Spacer()
+                Text(date, format: Date.FormatStyle().day().month(.abbreviated))
+                    .font(.system(size: 8, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+
+            if let data {
+                VStack(spacing: 2) {
+                    ForEach(data.times) { prayer in
+                        HStack(spacing: 4) {
+                            Text(
+                                appLanguage == .arabic
+                                    ? prayer.name.arabic : prayer.name.english.uppercased()
+                            )
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.yellow)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            Text(
+                                NoorPrayerTimeFormatter.format(
+                                    prayer.time, timeFormat: timeFormat, locale: locale
+                                )
+                            )
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                        }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 6)
+                        .background(Color.white.opacity(0.04))
+                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    }
+                }
+            } else {
+                Text(AppStrings.t("location_needed", appLanguage))
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .padding(.vertical, 8)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(8)
+    }
+}
+
 struct NextPrayerFace: View {
     @EnvironmentObject private var prayerModel: PrayerTimesViewModel
     @Environment(\.appLanguage) private var appLanguage
@@ -4017,9 +4114,9 @@ private func clockAngles(from date: Date) -> (hour: Double, minute: Double, seco
 }
 
 #if DEBUG
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+    struct ContentView_Previews: PreviewProvider {
+        static var previews: some View {
+            ContentView()
+        }
     }
-}
 #endif

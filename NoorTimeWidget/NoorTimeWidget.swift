@@ -1,6 +1,6 @@
+import AppIntents
 import SwiftUI
 import WidgetKit
-import AppIntents
 
 private enum NoorWidgetShared {
     static let suite = "group.noortime"
@@ -51,19 +51,26 @@ private enum NoorWidgetShared {
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .short
-        formatter.locale = resolvedLanguage == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
+        formatter.locale =
+            resolvedLanguage == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
         let raw = formatter.string(from: date)
         return resolvedDigits == .arabic ? toArabicDigits(raw) : raw
     }
 
-    static func formatDate(_ date: Date, language: WidgetLanguage, digits: WidgetDigits, calendar: WidgetCalendar, format: WidgetDateFormat) -> String {
+    static func formatDate(
+        _ date: Date, language: WidgetLanguage, digits: WidgetDigits, calendar: WidgetCalendar,
+        format: WidgetDateFormat
+    ) -> String {
         let resolvedLanguage = resolvedLanguage(language)
         let resolvedDigits = resolvedDigits(digits, language: language)
         let formatter = DateFormatter()
         switch format {
         case .auto:
-            formatter.calendar = calendar == .hijri ? Calendar(identifier: .islamicUmmAlQura) : Calendar(identifier: .gregorian)
-            formatter.locale = resolvedLanguage == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
+            formatter.calendar =
+                calendar == .hijri
+                ? Calendar(identifier: .islamicUmmAlQura) : Calendar(identifier: .gregorian)
+            formatter.locale =
+                resolvedLanguage == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
             formatter.dateFormat = "dd / MM / yyyy"
             let raw = formatter.string(from: date)
             return resolvedDigits == .arabic ? toArabicDigits(raw) : raw
@@ -93,26 +100,54 @@ private enum NoorWidgetShared {
     static func widgetBackground(for style: WidgetBackgroundStyle) -> LinearGradient {
         switch resolvedBackground(style) {
         case .black:
-            return LinearGradient(colors: [Color.black, Color(white: 0.12)], startPoint: .top, endPoint: .bottom)
+            return LinearGradient(
+                colors: [Color.black, Color(white: 0.12)], startPoint: .top, endPoint: .bottom)
         case .midnight:
-            return LinearGradient(colors: [Color(red: 0.05, green: 0.08, blue: 0.16), Color.black], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(
+                colors: [Color(red: 0.05, green: 0.08, blue: 0.16), Color.black],
+                startPoint: .topLeading, endPoint: .bottomTrailing)
         case .ocean:
-            return LinearGradient(colors: [Color(red: 0.04, green: 0.24, blue: 0.38), Color(red: 0.01, green: 0.09, blue: 0.18)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(
+                colors: [
+                    Color(red: 0.04, green: 0.24, blue: 0.38),
+                    Color(red: 0.01, green: 0.09, blue: 0.18),
+                ], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .emerald:
-            return LinearGradient(colors: [Color(red: 0.04, green: 0.28, blue: 0.20), Color(red: 0.01, green: 0.10, blue: 0.08)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(
+                colors: [
+                    Color(red: 0.04, green: 0.28, blue: 0.20),
+                    Color(red: 0.01, green: 0.10, blue: 0.08),
+                ], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .sand:
-            return LinearGradient(colors: [Color(red: 0.42, green: 0.31, blue: 0.18), Color(red: 0.16, green: 0.11, blue: 0.05)], startPoint: .top, endPoint: .bottom)
+            return LinearGradient(
+                colors: [
+                    Color(red: 0.42, green: 0.31, blue: 0.18),
+                    Color(red: 0.16, green: 0.11, blue: 0.05),
+                ], startPoint: .top, endPoint: .bottom)
         case .plum:
-            return LinearGradient(colors: [Color(red: 0.28, green: 0.11, blue: 0.24), Color(red: 0.09, green: 0.03, blue: 0.09)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(
+                colors: [
+                    Color(red: 0.28, green: 0.11, blue: 0.24),
+                    Color(red: 0.09, green: 0.03, blue: 0.09),
+                ], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .graphite:
-            return LinearGradient(colors: [Color(red: 0.22, green: 0.24, blue: 0.27), Color(red: 0.08, green: 0.09, blue: 0.11)], startPoint: .top, endPoint: .bottom)
+            return LinearGradient(
+                colors: [
+                    Color(red: 0.22, green: 0.24, blue: 0.27),
+                    Color(red: 0.08, green: 0.09, blue: 0.11),
+                ], startPoint: .top, endPoint: .bottom)
         case .auto:
-            return LinearGradient(colors: [Color.black, Color(white: 0.12)], startPoint: .top, endPoint: .bottom)
+            return LinearGradient(
+                colors: [Color.black, Color(white: 0.12)], startPoint: .top, endPoint: .bottom)
         }
     }
 
-    static func prayerTimes(for date: Date, latitude: Double, longitude: Double) -> [(String, Date)] {
-        guard let times = SolarPrayerCalculator.compute(for: date, latitude: latitude, longitude: longitude) else {
+    static func prayerTimes(for date: Date, latitude: Double, longitude: Double) -> [(String, Date)]
+    {
+        guard
+            let times = SolarPrayerCalculator.compute(
+                for: date, latitude: latitude, longitude: longitude)
+        else {
             return []
         }
         return [
@@ -126,7 +161,8 @@ private enum NoorWidgetShared {
     }
 
     static func fetchWeather(latitude: Double, longitude: Double) async -> WeatherSnapshot? {
-        let urlString = "https://api.open-meteo.com/v1/forecast?latitude=\(latitude)&longitude=\(longitude)&current=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min&timezone=auto"
+        let urlString =
+            "https://api.open-meteo.com/v1/forecast?latitude=\(latitude)&longitude=\(longitude)&current=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min&timezone=auto"
         guard let url = URL(string: urlString) else { return nil }
         do {
             let (bytes, _) = try await URLSession.shared.data(from: url)
@@ -135,7 +171,9 @@ private enum NoorWidgetShared {
             let meta = condition(for: current.weathercode)
             let high = decoded.daily?.temperature_2m_max?.first
             let low = decoded.daily?.temperature_2m_min?.first
-            return WeatherSnapshot(symbol: meta.symbol, label: meta.label, tempC: current.temperature_2m, highC: high, lowC: low)
+            return WeatherSnapshot(
+                symbol: meta.symbol, label: meta.label, tempC: current.temperature_2m, highC: high,
+                lowC: low)
         } catch {
             return nil
         }
@@ -157,21 +195,27 @@ private enum NoorWidgetShared {
 
     static func shortMonth(_ date: Date, language: WidgetLanguage) -> String {
         let formatter = DateFormatter()
-        formatter.locale = resolvedLanguage(language) == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
+        formatter.locale =
+            resolvedLanguage(language) == .arabic
+            ? Locale(identifier: "ar") : Locale(identifier: "en")
         formatter.setLocalizedDateFormatFromTemplate("MMM")
         return formatter.string(from: date)
     }
 
     static func monthName(_ date: Date, language: WidgetLanguage) -> String {
         let formatter = DateFormatter()
-        formatter.locale = resolvedLanguage(language) == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
+        formatter.locale =
+            resolvedLanguage(language) == .arabic
+            ? Locale(identifier: "ar") : Locale(identifier: "en")
         formatter.setLocalizedDateFormatFromTemplate("MMMM")
         return formatter.string(from: date)
     }
 
     static func weekdayNameFull(_ date: Date, language: WidgetLanguage) -> String {
         let formatter = DateFormatter()
-        formatter.locale = resolvedLanguage(language) == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
+        formatter.locale =
+            resolvedLanguage(language) == .arabic
+            ? Locale(identifier: "ar") : Locale(identifier: "en")
         formatter.setLocalizedDateFormatFromTemplate("EEEE")
         return formatter.string(from: date)
     }
@@ -188,7 +232,9 @@ private enum NoorWidgetShared {
     static func hijriMonthName(_ date: Date, language: WidgetLanguage) -> String {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .islamicUmmAlQura)
-        formatter.locale = resolvedLanguage(language) == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
+        formatter.locale =
+            resolvedLanguage(language) == .arabic
+            ? Locale(identifier: "ar") : Locale(identifier: "en")
         formatter.setLocalizedDateFormatFromTemplate("MMMM")
         return formatter.string(from: date)
     }
@@ -202,7 +248,9 @@ private enum NoorWidgetShared {
         return resolvedDigits(digits, language: language) == .arabic ? toArabicDigits(raw) : raw
     }
 
-    static func hijriDayNumber(_ date: Date, digits: WidgetDigits, language: WidgetLanguage) -> String {
+    static func hijriDayNumber(_ date: Date, digits: WidgetDigits, language: WidgetLanguage)
+        -> String
+    {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .islamicUmmAlQura)
         formatter.locale = Locale(identifier: "en")
@@ -211,7 +259,9 @@ private enum NoorWidgetShared {
         return resolvedDigits(digits, language: language) == .arabic ? toArabicDigits(raw) : raw
     }
 
-    static func hijriYearNumber(_ date: Date, digits: WidgetDigits, language: WidgetLanguage) -> String {
+    static func hijriYearNumber(_ date: Date, digits: WidgetDigits, language: WidgetLanguage)
+        -> String
+    {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .islamicUmmAlQura)
         formatter.locale = Locale(identifier: "en")
@@ -220,7 +270,6 @@ private enum NoorWidgetShared {
         return resolvedDigits(digits, language: language) == .arabic ? toArabicDigits(raw) : raw
     }
 
-    // Qibla bearing from coords to Kaaba (21.4225°N, 39.8262°E)
     static func qiblaDirection(latitude: Double, longitude: Double) -> Double {
         let kLat = 21.4225 * .pi / 180
         let kLon = 39.8262 * .pi / 180
@@ -235,9 +284,10 @@ private enum NoorWidgetShared {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// MARK: - Solar Prayer Calculator (unchanged)
+// MARK: - Solar Prayer Calculator
 // ─────────────────────────────────────────────────────────────────
 private struct SolarPrayerCalculator {
+
     struct Times {
         let fajr: Date
         let sunrise: Date
@@ -252,14 +302,22 @@ private struct SolarPrayerCalculator {
         guard let dayOfYear = calendar.ordinality(of: .day, in: .year, for: day) else { return nil }
 
         let gamma = 2.0 * Double.pi / 365.0 * (Double(dayOfYear) - 1.0)
-        let equation = 229.18 * (0.000075 + 0.001868 * cos(gamma) - 0.032077 * sin(gamma) - 0.014615 * cos(2 * gamma) - 0.040849 * sin(2 * gamma))
-        let declination = 0.006918 - 0.399912 * cos(gamma) + 0.070257 * sin(gamma) - 0.006758 * cos(2 * gamma) + 0.000907 * sin(2 * gamma) - 0.002697 * cos(3 * gamma) + 0.00148 * sin(3 * gamma)
+        let equation =
+            229.18
+            * (0.000075 + 0.001868 * cos(gamma) - 0.032077 * sin(gamma) - 0.014615 * cos(2 * gamma)
+                - 0.040849 * sin(2 * gamma))
+        let declination =
+            0.006918 - 0.399912 * cos(gamma) + 0.070257 * sin(gamma) - 0.006758 * cos(2 * gamma)
+            + 0.000907 * sin(2 * gamma) - 0.002697 * cos(3 * gamma) + 0.00148 * sin(3 * gamma)
 
         let tz = TimeZone.current
         let tzOffset = Double(tz.secondsFromGMT(for: day)) / 60.0
         let noon = 720.0 - 4.0 * longitude - equation + tzOffset
 
-        guard let sunriseHA = hourAngle(latitude: latitude, declination: declination, zenithDegrees: 90.833) else { return nil }
+        guard
+            let sunriseHA = hourAngle(
+                latitude: latitude, declination: declination, zenithDegrees: 90.833)
+        else { return nil }
 
         let sunrise = noon - 4.0 * sunriseHA
         let sunset = noon + 4.0 * sunriseHA
@@ -273,7 +331,8 @@ private struct SolarPrayerCalculator {
         let latRad = latitude * .pi / 180.0
         let shadowAngle = atan(1.0 / (1.0 + tan(abs(latRad - declination))))
         let asrZenith = 90.0 - shadowAngle * 180.0 / .pi
-        let asrHA = hourAngle(latitude: latitude, declination: declination, zenithDegrees: asrZenith)
+        let asrHA = hourAngle(
+            latitude: latitude, declination: declination, zenithDegrees: asrZenith)
         let asr = (asrHA.map { noon + 4.0 * $0 }) ?? ((noon + sunset) / 2.0)
 
         return Times(
@@ -286,7 +345,9 @@ private struct SolarPrayerCalculator {
         )
     }
 
-    private static func hourAngle(latitude: Double, declination: Double, zenithDegrees: Double) -> Double? {
+    private static func hourAngle(latitude: Double, declination: Double, zenithDegrees: Double)
+        -> Double?
+    {
         let lat = latitude * .pi / 180.0
         let zenith = zenithDegrees * .pi / 180.0
         let numerator = cos(zenith) - sin(lat) * sin(declination)
@@ -306,16 +367,13 @@ private struct SolarPrayerCalculator {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// MARK: - Enums (WidgetFace uitgebreid met 10 nieuwe cases)
+// MARK: - Enums
 // ─────────────────────────────────────────────────────────────────
 
 enum WidgetFace: String, AppEnum {
-    // Bestaande cases — NIET gewijzigd
     case clock
     case date
     case weather
-
-    // ── Nieuwe kleine widget stijlen ──────────────────────────────
     case minimalist
     case gradientRing
     case retroNeon
@@ -326,22 +384,120 @@ enum WidgetFace: String, AppEnum {
     case qiblaCompass
     case currentWeather
     case compactWeather
+    case prayerTimes
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Widget Type"
     static var caseDisplayRepresentations: [WidgetFace: DisplayRepresentation] = [
-        .clock:          "Clock",
-        .date:           "Date",
-        .weather:        "Weather",
-        .minimalist:     "Minimalist",
-        .gradientRing:   "Gradient Ring",
-        .retroNeon:      "Retro Neon",
-        .geometric:      "Geometric",
-        .luxuryGold:     "Luxury Gold",
-        .midnight:       "Midnight",
+        .clock: "Clock",
+        .date: "Date",
+        .weather: "Weather",
+        .minimalist: "Minimalist",
+        .gradientRing: "Gradient Ring",
+        .retroNeon: "Retro Neon",
+        .geometric: "Geometric",
+        .luxuryGold: "Luxury Gold",
+        .midnight: "Midnight",
         .prayerProgress: "Prayer Progress",
-        .qiblaCompass:   "Qibla Compass",
+        .qiblaCompass: "Qibla Compass",
         .currentWeather: "Current Weather",
         .compactWeather: "Compact Weather",
+        .prayerTimes: "Prayer Times",
+    ]
+}
+
+enum WidgetFaceLarge: String, AppEnum {
+    case clock
+    case date
+    case todayDate
+    case dualCalendar
+    case monthGrid
+    case islamicDate
+    case weather
+    case currentWeather
+    case compactWeather
+    case prayerTimes
+    case nextPrayer
+    case prayerTimeline
+    case prayerProgress
+    case qiblaCompass
+    case weekPulse
+    case monthProgress
+    case yearJourney
+    case tripleOrbit
+    case luminousDigital
+    case calendarDuo
+    case minimalClock
+    case dualLineTime
+    case gregorian
+    case hijri
+    case thuluthSmall
+    case thuluthMedium
+    case thuluthLarge
+
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Large Widget Style"
+    static var caseDisplayRepresentations: [WidgetFaceLarge: DisplayRepresentation] = [
+        .clock: "Clock",
+        .date: "Date",
+        .todayDate: "Today Date",
+        .dualCalendar: "Dual Calendar",
+        .monthGrid: "Month Grid",
+        .islamicDate: "Islamic Date",
+        .weather: "Weather",
+        .currentWeather: "Current Weather",
+        .compactWeather: "Compact Weather",
+        .prayerTimes: "Prayer Times",
+        .nextPrayer: "Next Prayer",
+        .prayerTimeline: "Prayer Timeline",
+        .prayerProgress: "Prayer Progress",
+        .qiblaCompass: "Qibla Compass",
+        .weekPulse: "Week Pulse",
+        .monthProgress: "Month Progress",
+        .yearJourney: "Year Journey",
+        .tripleOrbit: "Triple Orbit",
+        .luminousDigital: "Luminous Digital",
+        .calendarDuo: "Calendar Duo",
+        .minimalClock: "Minimal Clock",
+        .dualLineTime: "Dual Line Time",
+        .gregorian: "Gregorian",
+        .hijri: "Hijri",
+        .thuluthSmall: "Thuluth Small",
+        .thuluthMedium: "Thuluth Medium",
+        .thuluthLarge: "Thuluth Large",
+    ]
+}
+
+enum WidgetFaceMedium: String, AppEnum {
+    case clock
+    case date
+    case weather
+    case currentWeather
+    case compactWeather
+    case luminousDigital
+    case calendarDuo
+    case minimalClock
+    case dualLineTime
+    case gregorian
+    case hijri
+    case weekPulse
+    case monthProgress
+    case yearJourney
+
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Medium Widget Style"
+    static var caseDisplayRepresentations: [WidgetFaceMedium: DisplayRepresentation] = [
+        .clock: "Clock",
+        .date: "Date",
+        .weather: "Weather",
+        .currentWeather: "Current Weather",
+        .compactWeather: "Compact Weather",
+        .luminousDigital: "Luminous Digital",
+        .calendarDuo: "Calendar Duo",
+        .minimalClock: "Minimal Clock",
+        .dualLineTime: "Dual Line Time",
+        .gregorian: "Gregorian",
+        .hijri: "Hijri",
+        .weekPulse: "Week Pulse",
+        .monthProgress: "Month Progress",
+        .yearJourney: "Year Journey",
     ]
 }
 
@@ -391,11 +547,11 @@ enum WidgetDateFormat: String, AppEnum {
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Date Format"
     static var caseDisplayRepresentations: [WidgetDateFormat: DisplayRepresentation] = [
-        .auto:            "Auto",
+        .auto: "Auto",
         .gregorianArabic: "٢٠٢٦ / ٠٤ / ٠٧",
-        .hijriArabic:     "١٤٤٧ / ١٠ / ١٩",
+        .hijriArabic: "١٤٤٧ / ١٠ / ١٩",
         .gregorianEnglish: "07 / 04 / 2026",
-        .hijriEnglish:    "19 / 10 / 1447",
+        .hijriEnglish: "19 / 10 / 1447",
     ]
 }
 
@@ -411,24 +567,25 @@ enum WidgetBackgroundStyle: String, AppEnum {
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Background"
     static var caseDisplayRepresentations: [WidgetBackgroundStyle: DisplayRepresentation] = [
-        .auto:     "Auto",
-        .black:    "Black",
+        .auto: "Auto",
+        .black: "Black",
         .midnight: "Midnight",
-        .ocean:    "Ocean",
-        .emerald:  "Emerald",
-        .sand:     "Sand",
-        .plum:     "Plum",
+        .ocean: "Ocean",
+        .emerald: "Emerald",
+        .sand: "Sand",
+        .plum: "Plum",
         .graphite: "Graphite",
     ]
 }
 
 // ─────────────────────────────────────────────────────────────────
-// MARK: - Intent / Entry / Provider (ongewijzigd)
+// MARK: - Intents / Entries / Providers
 // ─────────────────────────────────────────────────────────────────
 
 struct NoorWidgetIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "Noor Time Widget"
-    static var description = IntentDescription("Choose widget style, digits, language, calendar, background and date format.")
+    static var description = IntentDescription(
+        "Choose widget style, digits, language, calendar, background and date format.")
 
     @Parameter(title: "Widget", default: .clock)
     var face: WidgetFace
@@ -467,46 +624,85 @@ struct NoorWidgetEntry: TimelineEntry {
     let prayerTimes: [(String, Date)]
 }
 
-struct NoorWidgetProvider: AppIntentTimelineProvider {
+// ─────────────────────────────────────────────────────────────────
+// MARK: - Small Provider (1-second entries voor vloeiende klokwijzers)
+// ─────────────────────────────────────────────────────────────────
+private struct NoorWidgetProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> NoorWidgetEntry {
-        NoorWidgetEntry(date: .now, configuration: NoorWidgetIntent(), weather: nil, prayerTimes: [])
+        NoorWidgetEntry(
+            date: .now, configuration: NoorWidgetIntent(), weather: nil, prayerTimes: [])
     }
 
-    func snapshot(for configuration: NoorWidgetIntent, in context: Context) async -> NoorWidgetEntry {
+    func snapshot(for configuration: NoorWidgetIntent, in context: Context) async -> NoorWidgetEntry
+    {
         await makeEntry(configuration: configuration)
     }
 
-    func timeline(for configuration: NoorWidgetIntent, in context: Context) async -> Timeline<NoorWidgetEntry> {
+    func timeline(for configuration: NoorWidgetIntent, in context: Context) async -> Timeline<
+        NoorWidgetEntry
+    > {
         let defaults = NoorWidgetShared.defaults
         let lat = defaults.double(forKey: "noor.lastLatitude")
         let lon = defaults.double(forKey: "noor.lastLongitude")
         let effectiveLat = (lat == 0 && lon == 0) ? 52.3676 : lat
         let effectiveLon = (lat == 0 && lon == 0) ? 4.9041 : lon
 
-        // Weer en gebedstijden één keer ophalen — geldt voor alle entries
-        let weather = await NoorWidgetShared.fetchWeather(latitude: effectiveLat, longitude: effectiveLon)
-        let prayers = NoorWidgetShared.prayerTimes(for: .now, latitude: effectiveLat, longitude: effectiveLon)
+        let weather = await NoorWidgetShared.fetchWeather(
+            latitude: effectiveLat, longitude: effectiveLon)
+        let prayers = NoorWidgetShared.prayerTimes(
+            for: .now, latitude: effectiveLat, longitude: effectiveLon)
 
-        // 60 entries — één per minuut — zodat analoge wijzers elke
-        // minuut één stap verder draaien. iOS toont de entry waarvan
-        // entry.date <= huidige tijd en de volgende entry nog niet geldt.
         let cal = Calendar.current
-        let now = cal.date(bySetting: .second, value: 0,
-                           of: cal.date(bySetting: .nanosecond, value: 0, of: .now) ?? .now) ?? .now
+        // Snap to current second (no sub-second jitter)
+        let now = cal.date(
+            bySetting: .nanosecond, value: 0,
+            of: .now) ?? .now
 
-        let entries: [NoorWidgetEntry] = (0..<60).map { minute in
-            let entryDate = cal.date(byAdding: .minute, value: minute, to: now) ?? now
-            return NoorWidgetEntry(
-                date: entryDate,
-                configuration: configuration,
-                weather: weather,
-                prayerTimes: prayers
-            )
+        // ── SLEUTEL FIX ──────────────────────────────────────────
+        // Bepaal of de huidige face een analoge klok is.
+        // Analoge klokken hebben 1-seconde entries nodig.
+        // Andere faces (datum, weer, gebed) gaan per minuut — dat spaart resources.
+        let needsSeconds = configuration.face == .minimalist
+            || configuration.face == .gradientRing
+            || configuration.face == .retroNeon
+            || configuration.face == .geometric
+            || configuration.face == .luxuryGold
+            || configuration.face == .midnight
+
+        let entries: [NoorWidgetEntry]
+        let reloadDate: Date
+
+        if needsSeconds {
+            // 10 minuten aan 1-seconde entries (= 600 entries)
+            // iOS vernieuwt de timeline na reloadDate automatisch.
+            let totalSeconds = 600
+            entries = (0..<totalSeconds).map { i in
+                let entryDate = cal.date(byAdding: .second, value: i, to: now) ?? now
+                return NoorWidgetEntry(
+                    date: entryDate,
+                    configuration: configuration,
+                    weather: weather,
+                    prayerTimes: prayers
+                )
+            }
+            reloadDate = cal.date(byAdding: .second, value: totalSeconds, to: now)
+                ?? now.addingTimeInterval(TimeInterval(totalSeconds))
+        } else {
+            // Niet-analoge faces: 60 entries van 1 minuut
+            entries = (0..<60).map { minute in
+                let entryDate = cal.date(byAdding: .minute, value: minute, to: now) ?? now
+                return NoorWidgetEntry(
+                    date: entryDate,
+                    configuration: configuration,
+                    weather: weather,
+                    prayerTimes: prayers
+                )
+            }
+            reloadDate = cal.date(byAdding: .minute, value: 60, to: now)
+                ?? now.addingTimeInterval(3600)
         }
 
-        // Na 60 minuten opnieuw genereren (verse weer- en gebedstijden)
-        let reload = cal.date(byAdding: .minute, value: 60, to: now) ?? now.addingTimeInterval(3600)
-        return Timeline(entries: entries, policy: .after(reload))
+        return Timeline(entries: entries, policy: .after(reloadDate))
     }
 
     private func makeEntry(configuration: NoorWidgetIntent) async -> NoorWidgetEntry {
@@ -516,15 +712,226 @@ struct NoorWidgetProvider: AppIntentTimelineProvider {
         let effectiveLat = (lat == 0 && lon == 0) ? 52.3676 : lat
         let effectiveLon = (lat == 0 && lon == 0) ? 4.9041 : lon
 
-        let weather = await NoorWidgetShared.fetchWeather(latitude: effectiveLat, longitude: effectiveLon)
-        let prayers = NoorWidgetShared.prayerTimes(for: .now, latitude: effectiveLat, longitude: effectiveLon)
+        let weather = await NoorWidgetShared.fetchWeather(
+            latitude: effectiveLat, longitude: effectiveLon)
+        let prayers = NoorWidgetShared.prayerTimes(
+            for: .now, latitude: effectiveLat, longitude: effectiveLon)
 
-        return NoorWidgetEntry(date: .now, configuration: configuration, weather: weather, prayerTimes: prayers)
+        return NoorWidgetEntry(
+            date: .now, configuration: configuration, weather: weather, prayerTimes: prayers)
     }
 }
 
 // ─────────────────────────────────────────────────────────────────
-// MARK: - OpenMeteoResponse / WeatherSnapshot (ongewijzigd)
+// MARK: - Large intent / entry / provider
+// ─────────────────────────────────────────────────────────────────
+
+struct NoorLargeWidgetIntent: WidgetConfigurationIntent {
+    static var title: LocalizedStringResource = "Noor Time Large Widget"
+    static var description = IntentDescription(
+        "Choose large widget style, digits, language, calendar, background and date format.")
+
+    @Parameter(title: "Widget", default: .clock)
+    var face: WidgetFaceLarge
+
+    @Parameter(title: "Number Pattern", default: .auto)
+    var digits: WidgetDigits
+
+    @Parameter(title: "Language", default: .auto)
+    var language: WidgetLanguage
+
+    @Parameter(title: "Calendar", default: .gregorian)
+    var calendar: WidgetCalendar
+
+    @Parameter(title: "Background", default: .auto)
+    var background: WidgetBackgroundStyle
+
+    @Parameter(title: "Date Format", default: .auto)
+    var dateFormat: WidgetDateFormat
+
+    static var parameterSummary: some ParameterSummary {
+        Summary {
+            \.$face
+            \.$digits
+            \.$language
+            \.$calendar
+            \.$background
+            \.$dateFormat
+        }
+    }
+}
+
+struct NoorLargeWidgetEntry: TimelineEntry {
+    let date: Date
+    let configuration: NoorLargeWidgetIntent
+    let weather: WeatherSnapshot?
+    let prayerTimes: [(String, Date)]
+}
+
+struct NoorLargeWidgetProvider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> NoorLargeWidgetEntry {
+        NoorLargeWidgetEntry(
+            date: .now, configuration: NoorLargeWidgetIntent(), weather: nil, prayerTimes: [])
+    }
+
+    func snapshot(for configuration: NoorLargeWidgetIntent, in context: Context) async
+        -> NoorLargeWidgetEntry
+    {
+        await makeEntry(configuration: configuration)
+    }
+
+    func timeline(for configuration: NoorLargeWidgetIntent, in context: Context) async -> Timeline<
+        NoorLargeWidgetEntry
+    > {
+        let defaults = NoorWidgetShared.defaults
+        let lat = defaults.double(forKey: "noor.lastLatitude")
+        let lon = defaults.double(forKey: "noor.lastLongitude")
+        let effectiveLat = (lat == 0 && lon == 0) ? 52.3676 : lat
+        let effectiveLon = (lat == 0 && lon == 0) ? 4.9041 : lon
+
+        let weather = await NoorWidgetShared.fetchWeather(
+            latitude: effectiveLat, longitude: effectiveLon)
+        let prayers = NoorWidgetShared.prayerTimes(
+            for: .now, latitude: effectiveLat, longitude: effectiveLon)
+
+        let cal = Calendar.current
+        let now = cal.date(bySetting: .nanosecond, value: 0, of: .now) ?? .now
+
+        let entries: [NoorLargeWidgetEntry] = (0..<60).map { minute in
+            let entryDate = cal.date(byAdding: .minute, value: minute, to: now) ?? now
+            return NoorLargeWidgetEntry(
+                date: entryDate,
+                configuration: configuration,
+                weather: weather,
+                prayerTimes: prayers
+            )
+        }
+
+        let reload = cal.date(byAdding: .minute, value: 60, to: now) ?? now.addingTimeInterval(3600)
+        return Timeline(entries: entries, policy: .after(reload))
+    }
+
+    private func makeEntry(configuration: NoorLargeWidgetIntent) async -> NoorLargeWidgetEntry {
+        let defaults = NoorWidgetShared.defaults
+        let lat = defaults.double(forKey: "noor.lastLatitude")
+        let lon = defaults.double(forKey: "noor.lastLongitude")
+        let effectiveLat = (lat == 0 && lon == 0) ? 52.3676 : lat
+        let effectiveLon = (lat == 0 && lon == 0) ? 4.9041 : lon
+
+        let weather = await NoorWidgetShared.fetchWeather(
+            latitude: effectiveLat, longitude: effectiveLon)
+        let prayers = NoorWidgetShared.prayerTimes(
+            for: .now, latitude: effectiveLat, longitude: effectiveLon)
+
+        return NoorLargeWidgetEntry(
+            date: .now, configuration: configuration, weather: weather, prayerTimes: prayers)
+    }
+}
+
+struct NoorMediumWidgetIntent: WidgetConfigurationIntent {
+    static var title: LocalizedStringResource = "Noor Time Medium Widget"
+    static var description = IntentDescription(
+        "Choose medium widget style, digits, language, calendar, background and date format.")
+
+    @Parameter(title: "Widget", default: .clock)
+    var face: WidgetFaceMedium
+
+    @Parameter(title: "Number Pattern", default: .auto)
+    var digits: WidgetDigits
+
+    @Parameter(title: "Language", default: .auto)
+    var language: WidgetLanguage
+
+    @Parameter(title: "Calendar", default: .gregorian)
+    var calendar: WidgetCalendar
+
+    @Parameter(title: "Background", default: .auto)
+    var background: WidgetBackgroundStyle
+
+    @Parameter(title: "Date Format", default: .auto)
+    var dateFormat: WidgetDateFormat
+
+    static var parameterSummary: some ParameterSummary {
+        Summary {
+            \.$face
+            \.$digits
+            \.$language
+            \.$calendar
+            \.$background
+            \.$dateFormat
+        }
+    }
+}
+
+struct NoorMediumWidgetEntry: TimelineEntry {
+    let date: Date
+    let configuration: NoorMediumWidgetIntent
+    let weather: WeatherSnapshot?
+    let prayerTimes: [(String, Date)]
+}
+
+struct NoorMediumWidgetProvider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> NoorMediumWidgetEntry {
+        NoorMediumWidgetEntry(
+            date: .now, configuration: NoorMediumWidgetIntent(), weather: nil, prayerTimes: [])
+    }
+
+    func snapshot(for configuration: NoorMediumWidgetIntent, in context: Context) async
+        -> NoorMediumWidgetEntry
+    {
+        await makeEntry(configuration: configuration)
+    }
+
+    func timeline(for configuration: NoorMediumWidgetIntent, in context: Context) async -> Timeline<
+        NoorMediumWidgetEntry
+    > {
+        let defaults = NoorWidgetShared.defaults
+        let lat = defaults.double(forKey: "noor.lastLatitude")
+        let lon = defaults.double(forKey: "noor.lastLongitude")
+        let effectiveLat = (lat == 0 && lon == 0) ? 52.3676 : lat
+        let effectiveLon = (lat == 0 && lon == 0) ? 4.9041 : lon
+
+        let weather = await NoorWidgetShared.fetchWeather(
+            latitude: effectiveLat, longitude: effectiveLon)
+        let prayers = NoorWidgetShared.prayerTimes(
+            for: .now, latitude: effectiveLat, longitude: effectiveLon)
+
+        let cal = Calendar.current
+        let now = cal.date(bySetting: .nanosecond, value: 0, of: .now) ?? .now
+
+        let entries: [NoorMediumWidgetEntry] = (0..<60).map { minute in
+            let entryDate = cal.date(byAdding: .minute, value: minute, to: now) ?? now
+            return NoorMediumWidgetEntry(
+                date: entryDate,
+                configuration: configuration,
+                weather: weather,
+                prayerTimes: prayers
+            )
+        }
+
+        let reload = cal.date(byAdding: .minute, value: 60, to: now) ?? now.addingTimeInterval(3600)
+        return Timeline(entries: entries, policy: .after(reload))
+    }
+
+    private func makeEntry(configuration: NoorMediumWidgetIntent) async -> NoorMediumWidgetEntry {
+        let defaults = NoorWidgetShared.defaults
+        let lat = defaults.double(forKey: "noor.lastLatitude")
+        let lon = defaults.double(forKey: "noor.lastLongitude")
+        let effectiveLat = (lat == 0 && lon == 0) ? 52.3676 : lat
+        let effectiveLon = (lat == 0 && lon == 0) ? 4.9041 : lon
+
+        let weather = await NoorWidgetShared.fetchWeather(
+            latitude: effectiveLat, longitude: effectiveLon)
+        let prayers = NoorWidgetShared.prayerTimes(
+            for: .now, latitude: effectiveLat, longitude: effectiveLon)
+
+        return NoorMediumWidgetEntry(
+            date: .now, configuration: configuration, weather: weather, prayerTimes: prayers)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MARK: - OpenMeteoResponse / WeatherSnapshot
 // ─────────────────────────────────────────────────────────────────
 
 struct OpenMeteoResponse: Decodable {
@@ -549,274 +956,24 @@ struct WeatherSnapshot {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// MARK: - NoorConfigurableWidgetView (medium/large — ongewijzigd)
+// MARK: - Klokwijzer helpers (gebruikt entry.date — GEEN TimelineView)
+//
+//  ⚠️  TimelineView(.animation) werkt NIET in Widget extensions.
+//      De oplossing: de provider bouwt 1-seconde entries aan.
+//      Elke render-doorgang leest entry.date en berekent de hoeken.
+//      Zo bewegen de wijzers per seconde zonder extra animatie-code.
 // ─────────────────────────────────────────────────────────────────
 
-struct NoorConfigurableWidgetView: View {
-    var entry: NoorWidgetEntry
-
-    var body: some View {
-        ZStack {
-            switch entry.configuration.face {
-            case .clock:
-                clockBody
-            case .date:
-                dateBody
-            case .weather:
-                weatherBody
-            default:
-                clockBody   // fallback voor medium/large bij nieuwe cases
-            }
-        }
-        .containerBackground(for: .widget) {
-            NoorWidgetShared.widgetBackground(for: entry.configuration.background)
-        }
-    }
-
-    private var clockBody: some View {
-        VStack(spacing: 6) {
-            Text(NoorWidgetShared.formatTime(entry.date, language: entry.configuration.language, digits: entry.configuration.digits))
-                .font(.system(size: 30, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-            let dateText = NoorWidgetShared.formatDate(entry.date, language: entry.configuration.language, digits: entry.configuration.digits, calendar: entry.configuration.calendar, format: entry.configuration.dateFormat)
-            if !dateText.isEmpty {
-                Text(dateText)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.75))
-            }
-        }
-        .padding(14)
-    }
-
-    private var dateBody: some View {
-        VStack(spacing: 8) {
-            Text(NoorWidgetShared.formatDate(entry.date, language: entry.configuration.language, digits: entry.configuration.digits, calendar: entry.configuration.calendar, format: entry.configuration.dateFormat))
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-        }
-        .padding(12)
-    }
-
-    private var weatherBody: some View {
-        let resolvedLanguage = NoorWidgetShared.resolvedLanguage(entry.configuration.language)
-        return VStack(spacing: 6) {
-            if let weather = entry.weather {
-                Image(systemName: weather.symbol)
-                    .font(.system(size: 24, weight: .regular))
-                    .foregroundStyle(.white)
-                let temperatureText = "\(Int(weather.tempC.rounded()))"
-                Text((NoorWidgetShared.resolvedDigits(entry.configuration.digits, language: entry.configuration.language) == .arabic ? NoorWidgetShared.toArabicDigits(temperatureText) : temperatureText) + "°")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.yellow)
-                Text(resolvedLanguage == .arabic ? localizedConditionArabic(weather.label) : weather.label)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.8))
-            } else {
-                Text("--")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.white)
-            }
-        }
-        .padding(12)
-    }
-
-    private func localizedConditionArabic(_ english: String) -> String {
-        switch english {
-        case "Clear": return "صحو"
-        case "Partly Cloudy": return "غائم جزئياً"
-        case "Fog": return "ضباب"
-        case "Drizzle": return "رذاذ"
-        case "Rain": return "مطر"
-        case "Snow": return "ثلج"
-        case "Showers": return "زخات"
-        case "Thunder": return "عاصفة"
-        default: return english
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────
-// MARK: - NoorSmallWidgetView  ← HIER ZIJN ALLE WIJZIGINGEN
-// ─────────────────────────────────────────────────────────────────
-
-struct NoorSmallWidgetView: View {
-    let entry: NoorWidgetEntry
-
-    var body: some View {
-        ZStack {
-            switch entry.configuration.face {
-
-            // ── Bestaande 3 cases (ongewijzigd) ──────────────────
-            case .clock:
-                smallClockBody
-            case .date:
-                smallDateBody
-            case .weather:
-                smallWeatherBody
-
-            // ── 6 nieuwe analoog-stijl klokken ───────────────────
-            case .minimalist:
-                SmallMinimalistBody(entry: entry)
-            case .gradientRing:
-                SmallGradientRingBody(entry: entry)
-            case .retroNeon:
-                SmallRetroNeonBody(entry: entry)
-            case .geometric:
-                SmallGeometricBody(entry: entry)
-            case .luxuryGold:
-                SmallLuxuryGoldBody(entry: entry)
-            case .midnight:
-                SmallMidnightBody(entry: entry)
-
-            // ── 2 nieuwe gebedstijden kaartjes ────────────────────
-            case .prayerProgress:
-                SmallPrayerProgressBody(entry: entry)
-            case .qiblaCompass:
-                SmallQiblaCompassBody(entry: entry)
-
-            // ── 2 nieuwe weer-stijlen ─────────────────────────────
-            case .currentWeather:
-                SmallCurrentWeatherBody(entry: entry)
-            case .compactWeather:
-                SmallCompactWeatherBody(entry: entry)
-            }
-        }
-        .containerBackground(for: .widget) {
-            NoorWidgetShared.widgetBackground(for: entry.configuration.background)
-        }
-    }
-
-    // ── Bestaande private vars (ongewijzigd) ──────────────────────
-
-    private var smallDateBody: some View {
-        Group {
-            if entry.configuration.calendar == .hijri {
-                hijriDateBody
-            } else {
-                gregorianDateBody
-            }
-        }
-    }
-
-    private var hijriDateBody: some View {
-        let resolvedLanguage = NoorWidgetShared.resolvedLanguage(entry.configuration.language)
-        return VStack(spacing: 6) {
-            Text(NoorWidgetShared.dayNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language))
-                .font(.custom("DecoType Thuluth", size: 56))
-                .foregroundStyle(.yellow)
-                .shadow(color: Color.yellow.opacity(0.3), radius: 6)
-            Text(NoorWidgetShared.shortMonth(entry.date, language: entry.configuration.language).uppercased())
-                .font(.custom("DecoType Thuluth", size: 16))
-                .foregroundStyle(.white)
-            Text(NoorWidgetShared.hijriDayNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language) + " " + NoorWidgetShared.hijriMonthName(entry.date, language: resolvedLanguage))
-                .font(.custom("DecoType Thuluth", size: 14))
-                .foregroundStyle(.white.opacity(0.7))
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(12)
-    }
-
-    private var gregorianDateBody: some View {
-        let resolvedLanguage = NoorWidgetShared.resolvedLanguage(entry.configuration.language)
-        return VStack(spacing: 10) {
-            Text(NoorWidgetShared.weekdayNameFull(entry.date, language: resolvedLanguage).uppercased())
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(NoorWidgetShared.dayNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language))
-                .font(.system(size: 76, weight: .heavy, design: .rounded))
-                .foregroundStyle(.yellow)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(NoorWidgetShared.monthName(entry.date, language: resolvedLanguage).uppercased())
-                .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(NoorWidgetShared.yearNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language))
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.vertical, 18)
-        .padding(.horizontal, 12)
-    }
-
-    private var smallClockBody: some View {
-        VStack(spacing: 10) {
-            Text(NoorWidgetShared.formatTime(entry.date, language: entry.configuration.language, digits: entry.configuration.digits))
-                .font(.system(size: 36, weight: .bold, design: .monospaced))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text(NoorWidgetShared.formatDate(entry.date, language: entry.configuration.language, digits: entry.configuration.digits, calendar: entry.configuration.calendar, format: entry.configuration.dateFormat))
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.75))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .lineLimit(2)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(12)
-    }
-
-    private var smallWeatherBody: some View {
-        let resolvedLanguage = NoorWidgetShared.resolvedLanguage(entry.configuration.language)
-        return VStack(spacing: 6) {
-            if let weather = entry.weather {
-                Image(systemName: weather.symbol)
-                    .font(.system(size: 22, weight: .regular))
-                    .foregroundStyle(.white)
-                let temperatureText = "\(Int(weather.tempC.rounded()))"
-                Text((NoorWidgetShared.resolvedDigits(entry.configuration.digits, language: entry.configuration.language) == .arabic ? NoorWidgetShared.toArabicDigits(temperatureText) : temperatureText) + "°")
-                    .font(.system(size: 38, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.yellow)
-                Text(resolvedLanguage == .arabic ? localizedConditionArabic(weather.label) : weather.label)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.8))
-                    .lineLimit(1)
-            } else {
-                Text("--")
-                    .font(.system(size: 28, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.white)
-            }
-        }
-        .padding(12)
-    }
-
-    private func localizedConditionArabic(_ english: String) -> String {
-        switch english {
-        case "Clear": return "صحو"
-        case "Partly Cloudy": return "غائم جزئياً"
-        case "Fog": return "ضباب"
-        case "Drizzle": return "رذاذ"
-        case "Rain": return "مطر"
-        case "Snow": return "ثلج"
-        case "Showers": return "زخات"
-        case "Thunder": return "عاصفة"
-        default: return english
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────
-// MARK: - Gedeelde helper: wijzerhoeken berekenen vanuit Date
-// Widgets hebben geen TimelineView, dus we lezen entry.date direct.
-// ─────────────────────────────────────────────────────────────────
-private func widgetClockAngles(from date: Date) -> (hour: Double, minute: Double, second: Double) {
+private func clockAngles(from date: Date) -> (hour: Double, minute: Double, second: Double) {
     let c = Calendar.current.dateComponents([.hour, .minute, .second], from: date)
     let h = Double(c.hour ?? 0)
     let m = Double(c.minute ?? 0)
     let s = Double(c.second ?? 0)
-    let preciseMin  = m + s / 60
-    let preciseHour = (h.truncatingRemainder(dividingBy: 12)) + preciseMin / 60
-    return (preciseHour / 12 * 360, preciseMin / 60 * 360, s / 60 * 360)
+    let preciseMin  = m + s / 60.0
+    let preciseHour = (h.truncatingRemainder(dividingBy: 12)) + preciseMin / 60.0
+    return (preciseHour / 12.0 * 360.0, preciseMin / 60.0 * 360.0, s / 60.0 * 360.0)
 }
 
-// Gedeelde capsule-wijzer (zelfde patroon als ContentView HandShape)
 private struct WidgetHand: View {
     let length: CGFloat
     let width: CGFloat
@@ -833,410 +990,653 @@ private struct WidgetHand: View {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// MARK: - 1. Minimalist  (analoge klok)
-// Strak, dunne ticks, witte wijzers, gouden secondewijzer
+// MARK: - NoorLargeWidgetView
 // ─────────────────────────────────────────────────────────────────
-private struct SmallMinimalistBody: View {
-    let entry: NoorWidgetEntry
+
+struct NoorLargeWidgetView: View {
+    let entry: NoorLargeWidgetEntry
+
+    private var cfg: NoorLargeWidgetIntent { entry.configuration }
+    private var lang: WidgetLanguage { cfg.language }
+    private var digits: WidgetDigits { cfg.digits }
+    private var resolvedLang: WidgetLanguage { NoorWidgetShared.resolvedLanguage(lang) }
+    private var isArabic: Bool { resolvedLang == .arabic }
 
     var body: some View {
-        let angles = widgetClockAngles(from: entry.date)
-        let size: CGFloat = 130
-
         ZStack {
-            // Wijzerplaat achtergrond
-            Circle()
-                .fill(Color.black.opacity(0.0))   // transparant — containerBackground zorgt voor kleur
-                .overlay(Circle().stroke(Color.white.opacity(0.15), lineWidth: 1))
-
-            // Minuut-ticks (60x)
-            ForEach(0..<60) { i in
-                let isHour = i % 5 == 0
-                Rectangle()
-                    .fill(Color.white.opacity(isHour ? 0.85 : 0.25))
-                    .frame(width: isHour ? 2 : 1, height: isHour ? 10 : 5)
-                    .offset(y: -(size / 2 - 14))
-                    .rotationEffect(.degrees(Double(i) * 6))
+            switch cfg.face {
+            case .clock:              largeClockBody
+            case .date:               largeDateBody
+            case .todayDate:          LargeTodayDateBody(entry: entry)
+            case .dualCalendar:       LargeDualCalendarBody(entry: entry)
+            case .monthGrid:          LargeMonthGridBody(entry: entry)
+            case .islamicDate:        LargeIslamicDateBody(entry: entry)
+            case .weather:            largeWeatherBody
+            case .currentWeather:     LargeCurrentWeatherBody(entry: entry)
+            case .compactWeather:     LargeCompactWeatherBody(entry: entry)
+            case .prayerTimes:        LargePrayerTimesBody(entry: entry)
+            case .nextPrayer:         LargeNextPrayerBody(entry: entry)
+            case .prayerTimeline:     LargePrayerTimelineBody(entry: entry)
+            case .prayerProgress:     LargePrayerProgressBody(entry: entry)
+            case .qiblaCompass:       LargeQiblaCompassBody(entry: entry)
+            case .weekPulse:          LargeWeekPulseBody(entry: entry)
+            case .monthProgress:      LargeMonthProgressBody(entry: entry)
+            case .yearJourney:        LargeYearJourneyBody(entry: entry)
+            case .tripleOrbit:        LargeTripleOrbitBody(entry: entry)
+            case .luminousDigital:    LargeLuminousDigitalBody(entry: entry)
+            case .calendarDuo:        LargeCalendarDuoBody(entry: entry)
+            case .minimalClock:       LargeMinimalClockBody(entry: entry)
+            case .dualLineTime:       LargeDualLineTimeBody(entry: entry)
+            case .gregorian:          LargeGregorianBody(entry: entry)
+            case .hijri:              LargeHijriBody(entry: entry)
+            case .thuluthSmall:       LargeThuluthSmallBody(entry: entry)
+            case .thuluthMedium:      LargeThuluthMediumBody(entry: entry)
+            case .thuluthLarge:       LargeThuluthLargeBody(entry: entry)
             }
-
-            // Uurwijzer — dik, wit
-            WidgetHand(length: size * 0.30, width: 4, color: .white, angleDeg: angles.hour)
-            // Minuutwijzer — iets dunner
-            WidgetHand(length: size * 0.42, width: 2.5, color: .white.opacity(0.85), angleDeg: angles.minute)
-            // Secondewijzer — goud
-            WidgetHand(length: size * 0.46, width: 1.5, color: .yellow, angleDeg: angles.second)
-                .shadow(color: .yellow.opacity(0.5), radius: 3)
-
-            // Middelpunt
-            Circle().fill(Color.yellow).frame(width: 6, height: 6)
-                .overlay(Circle().stroke(Color.black, lineWidth: 1))
         }
-        .frame(width: size, height: size)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .containerBackground(for: .widget) {
+            NoorWidgetShared.widgetBackground(for: cfg.background)
+        }
     }
-}
 
-// ─────────────────────────────────────────────────────────────────
-// MARK: - 2. Gradient Ring  (analoge klok)
-// Angular gouden gradient-ring, dot-markers, wijzers
-// ─────────────────────────────────────────────────────────────────
-private struct SmallGradientRingBody: View {
-    let entry: NoorWidgetEntry
+    private var largeClockBody: some View {
+        VStack(spacing: 10) {
+            Text(NoorWidgetShared.formatTime(entry.date, language: lang, digits: digits))
+                .font(.system(size: 48, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            Text(NoorWidgetShared.formatDate(
+                entry.date, language: lang, digits: digits,
+                calendar: cfg.calendar, format: cfg.dateFormat))
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.75))
+        }
+        .padding(20)
+    }
 
-    var body: some View {
-        let angles = widgetClockAngles(from: entry.date)
-        let size: CGFloat = 130
+    private var largeDateBody: some View {
+        VStack(spacing: 12) {
+            Text(NoorWidgetShared.formatDate(
+                entry.date, language: lang, digits: digits,
+                calendar: cfg.calendar, format: cfg.dateFormat))
+                .font(.system(size: 22, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+        }
+        .padding(16)
+    }
 
-        ZStack {
-            // Gouden angular gradient ring
-            Circle()
-                .stroke(
-                    AngularGradient(
-                        gradient: Gradient(colors: [
-                            Color.yellow,
-                            Color.white.opacity(0.7),
-                            Color.yellow.opacity(0.3),
-                            Color.yellow
-                        ]),
-                        center: .center
-                    ),
-                    lineWidth: 7
+    private var largeWeatherBody: some View {
+        VStack(spacing: 8) {
+            if let weather = entry.weather {
+                Image(systemName: weather.symbol)
+                    .font(.system(size: 40, weight: .regular))
+                    .foregroundStyle(.white)
+                let temperatureText = "\(Int(weather.tempC.rounded()))"
+                Text(
+                    (NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                        ? NoorWidgetShared.toArabicDigits(temperatureText) : temperatureText) + "°"
                 )
-                .padding(4)
-
-            // Binnenste subtiele ring
-            Circle()
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                .padding(14)
-
-            // Dot-markers (12x)
-            ForEach(0..<12) { i in
-                let isMajor = i % 3 == 0
-                Circle()
-                    .fill(Color.white.opacity(isMajor ? 0.85 : 0.35))
-                    .frame(width: isMajor ? 5 : 3, height: isMajor ? 5 : 3)
-                    .offset(y: -(size / 2 - 22))
-                    .rotationEffect(.degrees(Double(i) * 30))
+                .font(.system(size: 52, weight: .heavy, design: .rounded))
+                .foregroundStyle(.yellow)
+                Text(isArabic ? localizedConditionArabic(weather.label) : weather.label)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.8))
+            } else {
+                Text("--")
+                    .font(.system(size: 52, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
             }
-
-            // Wijzers
-            WidgetHand(length: size * 0.28, width: 5, color: .white, angleDeg: angles.hour)
-            WidgetHand(length: size * 0.40, width: 3, color: .white.opacity(0.8), angleDeg: angles.minute)
-            WidgetHand(length: size * 0.44, width: 2, color: .yellow, angleDeg: angles.second)
-
-            Circle().fill(Color.white).frame(width: 8, height: 8)
-                .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
         }
-        .frame(width: size, height: size)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(16)
+    }
+
+    private func localizedConditionArabic(_ english: String) -> String {
+        switch english {
+        case "Clear":         return "صحو"
+        case "Partly Cloudy": return "غائم جزئياً"
+        case "Fog":           return "ضباب"
+        case "Drizzle":       return "رذاذ"
+        case "Rain":          return "مطر"
+        case "Snow":          return "ثلج"
+        case "Showers":       return "زخات"
+        case "Thunder":       return "عاصفة"
+        default:              return english
+        }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────
-// MARK: - 3. Retro Neon  (analoge klok)
-// Gele neon-rand, cijfers 1–12, gouden secondewijzer met glow
+// MARK: - Large sub-views (ongewijzigd t.o.v. origineel)
 // ─────────────────────────────────────────────────────────────────
-private struct SmallRetroNeonBody: View {
-    let entry: NoorWidgetEntry
 
-    private let neon = Color.yellow
+private struct LargeTodayDateBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
 
     var body: some View {
-        let angles = widgetClockAngles(from: entry.date)
-        let size: CGFloat = 128
-
-        ZStack {
-            // Neon-rand
-            Circle()
-                .stroke(neon.opacity(0.75), lineWidth: 2)
-                .shadow(color: neon.opacity(0.5), radius: 6)
-
-            // Cijfers 1–12
-            ForEach(1...12, id: \.self) { i in
-                Text("\(i)")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(neon.opacity(0.8))
-                    .offset(y: -(size / 2 - 22))
-                    .rotationEffect(.degrees(Double(i) * 30))
-                    // tegenrotatie zodat cijfers rechtop staan
-                    .rotationEffect(.degrees(-Double(i) * 30), anchor: .center)
-                    // correctie: roteer het label terug rond het middelpunt
-                    .rotationEffect(.degrees(Double(i) * 30), anchor: .center)
-            }
-
-            // Wijzers
-            WidgetHand(length: size * 0.28, width: 4, color: .white, angleDeg: angles.hour)
-            WidgetHand(length: size * 0.40, width: 2.5, color: .white.opacity(0.9), angleDeg: angles.minute)
-            WidgetHand(length: size * 0.44, width: 1.5, color: neon, angleDeg: angles.second)
-                .shadow(color: neon.opacity(0.8), radius: 5)
-
-            Circle().fill(neon).frame(width: 7, height: 7)
-                .overlay(Circle().stroke(Color.black, lineWidth: 1))
-                .shadow(color: neon.opacity(0.6), radius: 4)
+        let calendar = Calendar.current
+        let day = calendar.component(.day, from: entry.date)
+        VStack(spacing: 20) {
+            Text(NoorWidgetShared.weekdayNameFull(entry.date, language: lang).uppercased())
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+            Text(NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                ? NoorWidgetShared.toArabicDigits("\(day)") : "\(day)")
+                .font(.system(size: 110, weight: .heavy, design: .rounded))
+                .foregroundStyle(.yellow)
+            Text(NoorWidgetShared.monthName(entry.date, language: lang).uppercased())
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            Text(NoorWidgetShared.yearNumber(entry.date, digits: digits, language: lang))
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
         }
-        .frame(width: size, height: size)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 32)
     }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// MARK: - 4. Geometric  (analoge klok)
-// Concentrische zeshoeken, driehoek-markers, gele secondewijzer
-// ─────────────────────────────────────────────────────────────────
-private struct SmallGeometricBody: View {
-    let entry: NoorWidgetEntry
+private struct LargeDualCalendarBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
 
     var body: some View {
-        let angles = widgetClockAngles(from: entry.date)
-        let size: CGFloat = 130
-
-        ZStack {
-            // Concentrische zeshoeken
-            ForEach(0..<4) { i in
-                SmallHexagon()
-                    .stroke(Color.white.opacity(0.10 - Double(i) * 0.02), lineWidth: 1)
-                    .padding(CGFloat(i) * 12)
+        HStack(spacing: 20) {
+            VStack(spacing: 12) {
+                Text("GREGORIAN")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.5))
+                Text(NoorWidgetShared.dayNumber(entry.date, digits: digits, language: lang))
+                    .font(.system(size: 64, weight: .bold, design: .rounded))
+                    .foregroundStyle(.yellow)
+                Text(NoorWidgetShared.shortMonth(entry.date, language: lang).uppercased())
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text(NoorWidgetShared.yearNumber(entry.date, digits: digits, language: lang))
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.vertical, 28)
+            .background(Color.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-            // Driehoek-markers (12x)
-            ForEach(0..<12) { i in
-                SmallTriangle()
-                    .fill(Color.white.opacity(0.55))
-                    .frame(width: 6, height: 8)
-                    .offset(y: -(size / 2 - 20))
-                    .rotationEffect(.degrees(Double(i) * 30))
+            VStack(spacing: 12) {
+                Text("HIJRI")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.5))
+                let hijri = Calendar(identifier: .islamicUmmAlQura)
+                let comps = hijri.dateComponents([.day, .month, .year], from: entry.date)
+                let dayStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                    ? NoorWidgetShared.toArabicDigits(String(comps.day ?? 0))
+                    : String(comps.day ?? 0)
+                Text(dayStr)
+                    .font(.system(size: 64, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text(NoorWidgetShared.hijriMonthName(entry.date, language: lang))
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text(NoorWidgetShared.hijriYearNumber(entry.date, digits: digits, language: lang))
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
             }
-
-            // Wijzers
-            WidgetHand(length: size * 0.30, width: 5, color: .white, angleDeg: angles.hour)
-            WidgetHand(length: size * 0.42, width: 3, color: .white.opacity(0.8), angleDeg: angles.minute)
-            WidgetHand(length: size * 0.46, width: 2, color: .yellow, angleDeg: angles.second)
-
-            Circle().fill(Color.yellow).frame(width: 8, height: 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.vertical, 28)
+            .background(Color.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
-        .frame(width: size, height: size)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(16)
     }
 }
 
-// Shapes voor Geometric
-private struct SmallHexagon: Shape {
-    func path(in rect: CGRect) -> Path {
-        let cx = rect.midX, cy = rect.midY
-        let r = min(rect.width, rect.height) / 2
-        var p = Path()
-        for i in 0..<6 {
-            let angle = (Double(i) * 60.0 - 30.0) * .pi / 180.0
-            let pt = CGPoint(x: cx + r * CGFloat(cos(angle)), y: cy + r * CGFloat(sin(angle)))
-            i == 0 ? p.move(to: pt) : p.addLine(to: pt)
-        }
-        p.closeSubpath()
-        return p
-    }
-}
-
-private struct SmallTriangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        p.closeSubpath()
-        return p
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────
-// MARK: - 5. Luxury Gold  (analoge klok)
-// Gouden rand, Romeinse cijfers, gouden uurwijzer + minuutwijzer,
-// witte secondewijzer
-// ─────────────────────────────────────────────────────────────────
-private struct SmallLuxuryGoldBody: View {
-    let entry: NoorWidgetEntry
-
-    private let romanNumerals = ["XII","I","II","III","IV","V","VI","VII","VIII","IX","X","XI"]
+private struct LargeMonthGridBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
 
     var body: some View {
-        let angles = widgetClockAngles(from: entry.date)
-        let size: CGFloat = 130
+        let calendar = Calendar.current
+        let currentDay = calendar.component(.day, from: entry.date)
+        let daysInMonth = calendar.range(of: .day, in: .month, for: entry.date)?.count ?? 30
+        let columns = 7
+        let rows = Int(ceil(Double(daysInMonth) / Double(columns)))
 
-        ZStack {
-            // Gouden buitenrand
-            Circle()
-                .stroke(Color.yellow.opacity(0.55), lineWidth: 2)
-            Circle()
-                .stroke(Color.yellow.opacity(0.2), lineWidth: 1)
-                .padding(8)
-
-            // Romeinse cijfers
-            ForEach(0..<12) { i in
-                Text(romanNumerals[i])
-                    .font(.system(size: 10, weight: .medium, design: .serif))
-                    .foregroundStyle(Color.yellow.opacity(0.85))
-                    .offset(y: -(size / 2 - 26))
-                    .rotationEffect(.degrees(Double(i) * 30))
-                    .rotationEffect(.degrees(-Double(i) * 30), anchor: .center)
-                    .rotationEffect(.degrees(Double(i) * 30), anchor: .center)
+        VStack(spacing: 16) {
+            HStack {
+                Text(NoorWidgetShared.monthName(entry.date, language: lang).uppercased())
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Spacer()
+                Text(NoorWidgetShared.yearNumber(entry.date, digits: digits, language: lang))
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
             }
-
-            // Wijzers — uur + minuut goud, seconde wit
-            WidgetHand(length: size * 0.27, width: 5, color: .yellow, angleDeg: angles.hour)
-            WidgetHand(length: size * 0.38, width: 3, color: .yellow.opacity(0.8), angleDeg: angles.minute)
-            WidgetHand(length: size * 0.44, width: 1.5, color: .white, angleDeg: angles.second)
-
-            Circle().fill(Color.yellow).frame(width: 8, height: 8)
-                .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-                .shadow(color: .yellow.opacity(0.5), radius: 4)
+            VStack(spacing: 8) {
+                ForEach(0..<rows, id: \.self) { row in
+                    HStack(spacing: 6) {
+                        ForEach(0..<columns, id: \.self) { col in
+                            let dayNum = row * columns + col + 1
+                            if dayNum <= daysInMonth {
+                                let isToday = dayNum == currentDay
+                                let dayStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                                    ? NoorWidgetShared.toArabicDigits("\(dayNum)") : "\(dayNum)"
+                                Text(dayStr)
+                                    .font(.system(size: isToday ? 15 : 13, weight: isToday ? .bold : .medium, design: .rounded))
+                                    .foregroundStyle(isToday ? .black : .white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 36)
+                                    .background(isToday ? Color.yellow : Color.white.opacity(0.06))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            } else {
+                                Color.clear.frame(maxWidth: .infinity).frame(height: 36)
+                            }
+                        }
+                    }
+                }
+            }
         }
-        .frame(width: size, height: size)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(16)
     }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// MARK: - 6. Midnight  (analoge klok)
-// Radiale gradient achtergrond, subtiele dot-markers,
-// halve-cirkel trim die meedraait met secondewijzer als "maan"
-// ─────────────────────────────────────────────────────────────────
-private struct SmallMidnightBody: View {
-    let entry: NoorWidgetEntry
+private struct LargeIslamicDateBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
 
     var body: some View {
-        let angles = widgetClockAngles(from: entry.date)
-        let size: CGFloat = 130
+        let hijri = Calendar(identifier: .islamicUmmAlQura)
+        let comps = hijri.dateComponents([.day, .month, .year], from: entry.date)
+        let dayStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(comps.day ?? 0))
+            : String(comps.day ?? 0)
 
-        ZStack {
-            // Radiale achtergrond (donkerder centrum)
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [Color(white: 0.12), Color.black],
-                        center: .center,
-                        startRadius: 10,
-                        endRadius: size / 2
-                    )
-                )
-            Circle()
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-
-            // Dot-markers (12x)
-            ForEach(0..<12) { i in
-                Circle()
-                    .fill(Color.white.opacity(0.28))
-                    .frame(width: 3, height: 3)
-                    .offset(y: -(size / 2 - 16))
-                    .rotationEffect(.degrees(Double(i) * 30))
-            }
-
-            // Maanfase-boog — draait mee met secondewijzer
-            Circle()
-                .trim(from: 0, to: 0.5)
-                .stroke(Color.yellow.opacity(0.35), lineWidth: 2)
-                .rotationEffect(.degrees(angles.second))
-                .padding(size * 0.12)
-
-            // Wijzers
-            WidgetHand(length: size * 0.30, width: 4, color: .white.opacity(0.9), angleDeg: angles.hour)
-            WidgetHand(length: size * 0.42, width: 2.5, color: .white.opacity(0.7), angleDeg: angles.minute)
-            WidgetHand(length: size * 0.46, width: 1.2, color: .yellow, angleDeg: angles.second)
-                .shadow(color: .yellow.opacity(0.4), radius: 3)
-
-            Circle().fill(Color.yellow).frame(width: 5, height: 5)
+        VStack(spacing: 20) {
+            Text("التقويم الهجري")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+            Text(dayStr)
+                .font(.system(size: 100, weight: .heavy, design: .rounded))
+                .foregroundStyle(.yellow)
+            Text(NoorWidgetShared.hijriMonthName(entry.date, language: lang))
+                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            Text(NoorWidgetShared.hijriYearNumber(entry.date, digits: digits, language: lang) + " هـ")
+                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
         }
-        .frame(width: size, height: size)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 32)
     }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// MARK: - 7. Prayer Progress
-// Gebaseerd op ContentView: PrayerProgressFace
-// Cirkel-ring: gebeden voltooid / 5, volgende gebedstijd
-// ─────────────────────────────────────────────────────────────────
-private struct SmallPrayerProgressBody: View {
-    let entry: NoorWidgetEntry
-
-    // Gebeden zonder Sunrise = 5 verplichte gebeden
-    private var obligatoryPrayers: [(String, Date)] {
-        entry.prayerTimes.filter { $0.0 != "Sunrise" }
+private struct LargeCurrentWeatherBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+    private var locationName: String {
+        NoorWidgetShared.defaults.string(forKey: "noor.lastLocationName") ?? "—"
     }
 
-    private var completedCount: Int {
-        obligatoryPrayers.filter { $0.1 <= entry.date }.count
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                Text(locationName)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer()
+                if let weather = entry.weather {
+                    Image(systemName: weather.symbol)
+                        .font(.system(size: 32, weight: .regular))
+                        .foregroundStyle(.white)
+                }
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                if let weather = entry.weather {
+                    let tempText = "\(Int(weather.tempC.rounded()))"
+                    Text((NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                        ? NoorWidgetShared.toArabicDigits(tempText) : tempText) + "°")
+                        .font(.system(size: 72, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.yellow)
+                } else {
+                    Text("--").font(.system(size: 72, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+                }
+                Spacer()
+                if let weather = entry.weather, let high = weather.highC, let low = weather.lowC {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("H: \(Int(high.rounded()))°")
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.75))
+                        Text("L: \(Int(low.rounded()))°")
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.75))
+                    }
+                }
+            }
+            Spacer()
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(entry.date, style: .time)
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(NoorWidgetShared.formatDate(
+                        entry.date, language: lang, digits: digits,
+                        calendar: entry.configuration.calendar,
+                        format: entry.configuration.dateFormat))
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+                Spacer()
+                Text("Updated now")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(20)
+    }
+}
+
+private struct LargeCompactWeatherBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+    private var locationName: String {
+        NoorWidgetShared.defaults.string(forKey: "noor.lastLocationName") ?? "—"
     }
 
-    private var nextPrayer: (String, Date)? {
-        entry.prayerTimes.first { $0.1 > entry.date }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                if let weather = entry.weather {
+                    Image(systemName: weather.symbol)
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.85))
+                }
+                Text(locationName)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            Spacer()
+            if let weather = entry.weather {
+                let tempText = "\(Int(weather.tempC.rounded()))"
+                let displayTemp = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                    ? NoorWidgetShared.toArabicDigits(tempText) : tempText
+                Text(displayTemp + "°")
+                    .font(.system(size: 80, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.yellow)
+                Text(weather.label)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.7))
+                if let high = weather.highC, let low = weather.lowC {
+                    Text("H:\(Int(high.rounded()))°  L:\(Int(low.rounded()))°")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.45))
+                        .padding(.top, 4)
+                }
+            } else {
+                Text("--")
+                    .font(.system(size: 80, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(20)
+    }
+}
+
+private struct LargePrayerTimesBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(lang) == .arabic }
+
+    private func arabicName(_ english: String) -> String {
+        switch english {
+        case "Fajr": return "الفجر"
+        case "Sunrise": return "الشروق"
+        case "Dhuhr": return "الظهر"
+        case "Asr": return "العصر"
+        case "Maghrib": return "المغرب"
+        case "Isha": return "العشاء"
+        default: return english
+        }
     }
 
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text(isArabic ? "مواقيت الصلاة" : "Prayer Times")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+                Spacer()
+                Text(entry.date, format: Date.FormatStyle().day().month(.abbreviated))
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            if entry.prayerTimes.isEmpty {
+                Spacer()
+                Text(isArabic ? "يلزم تحديد الموقع" : "Location needed")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+                Spacer()
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(Array(entry.prayerTimes.enumerated()), id: \.offset) { _, prayer in
+                        let isPast = prayer.1 <= entry.date
+                        HStack {
+                            if isArabic {
+                                Text(arabicName(prayer.0))
+                                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.yellow)
+                                    .frame(width: 80, alignment: .trailing)
+                            }
+                            Text(prayer.0.uppercased())
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(isPast ? .white.opacity(0.5) : .white.opacity(0.8))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text(prayer.1, style: .time)
+                                .font(.system(size: 20, weight: .bold, design: .monospaced))
+                                .foregroundStyle(isPast ? .white.opacity(0.5) : .white)
+                            if isPast { Text("✓").font(.system(size: 14, weight: .bold)).foregroundStyle(.yellow.opacity(0.6)) }
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
+                        .background(Color.white.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(16)
+    }
+}
+
+private struct LargeNextPrayerBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(lang) == .arabic }
+
+    private func arabicName(_ english: String) -> String {
+        switch english {
+        case "Fajr": return "الفجر"
+        case "Sunrise": return "الشروق"
+        case "Dhuhr": return "الظهر"
+        case "Asr": return "العصر"
+        case "Maghrib": return "المغرب"
+        case "Isha": return "العشاء"
+        default: return english
+        }
+    }
+
+    private var nextPrayer: (String, Date)? { entry.prayerTimes.first { $0.1 > entry.date } }
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Text(isArabic ? "الصلاة القادمة" : "Next Prayer")
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+            if let next = nextPrayer {
+                Text(isArabic ? arabicName(next.0) : next.0)
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .foregroundStyle(.yellow)
+                Text(next.0.uppercased())
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text(next.1, style: .time)
+                    .font(.system(size: 64, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(.white)
+                let interval = max(0, next.1.timeIntervalSince(entry.date))
+                let hours = Int(interval) / 3600
+                let minutes = (Int(interval) % 3600) / 60
+                let seconds = Int(interval) % 60
+                let countdownStr = hours > 0
+                    ? String(format: "%d:%02d:%02d", hours, minutes, seconds)
+                    : String(format: "%02d:%02d", minutes, seconds)
+                HStack(spacing: 6) {
+                    Text(isArabic ? "بعد" : "in")
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                    Text(countdownStr)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.yellow)
+                }
+                .padding(.horizontal, 20).padding(.vertical, 8)
+                .background(Color.white.opacity(0.06)).clipShape(Capsule())
+            } else {
+                Text(isArabic ? "يلزم تحديد الموقع" : "Location needed")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 32)
+    }
+}
+
+private struct LargePrayerTimelineBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(lang) == .arabic }
+    private var visiblePrayers: [(String, Date)] { entry.prayerTimes.filter { $0.0 != "Sunrise" } }
+
+    private func arabicName(_ english: String) -> String {
+        switch english {
+        case "Fajr": return "الفجر"
+        case "Dhuhr": return "الظهر"
+        case "Asr": return "العصر"
+        case "Maghrib": return "المغرب"
+        case "Isha": return "العشاء"
+        default: return english
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(isArabic ? "الجدول" : "Timeline")
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+            VStack(spacing: 0) {
+                ForEach(Array(visiblePrayers.enumerated()), id: \.offset) { index, prayer in
+                    let isPast = prayer.1 <= entry.date
+                    HStack(spacing: 18) {
+                        Text(prayer.1, style: .time)
+                            .font(.system(size: 18, weight: .bold, design: .monospaced))
+                            .foregroundStyle(isPast ? .white.opacity(0.5) : .white)
+                            .frame(width: 80, alignment: .trailing)
+                        VStack(spacing: 0) {
+                            Circle()
+                                .fill(isPast ? Color.yellow.opacity(0.5) : Color.yellow)
+                                .frame(width: isPast ? 12 : 16, height: isPast ? 12 : 16)
+                            if index < visiblePrayers.count - 1 {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.1))
+                                    .frame(width: 2, height: 48)
+                            }
+                        }
+                        Text(isArabic ? arabicName(prayer.0) : prayer.0.uppercased())
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundStyle(isPast ? .white.opacity(0.5) : .white)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        if isPast { Text("✓").font(.system(size: 16, weight: .bold)).foregroundStyle(.yellow.opacity(0.6)) }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(20)
+    }
+}
+
+private struct LargePrayerProgressBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(lang) == .arabic }
+    private var obligatoryPrayers: [(String, Date)] { entry.prayerTimes.filter { $0.0 != "Sunrise" } }
+    private var completedCount: Int { obligatoryPrayers.filter { $0.1 <= entry.date }.count }
     private var progress: Double {
         guard obligatoryPrayers.count > 0 else { return 0 }
         return Double(completedCount) / Double(obligatoryPrayers.count)
     }
+    private var nextPrayer: (String, Date)? { entry.prayerTimes.first { $0.1 > entry.date } }
 
     private func arabicName(_ english: String) -> String {
         switch english {
-        case "Fajr":    return "الفجر"
-        case "Dhuhr":   return "الظهر"
-        case "Asr":     return "العصر"
+        case "Fajr": return "الفجر"
+        case "Dhuhr": return "الظهر"
+        case "Asr": return "العصر"
         case "Maghrib": return "المغرب"
-        case "Isha":    return "العشاء"
-        case "Sunrise": return "الشروق"
-        default:        return english
+        case "Isha": return "العشاء"
+        default: return english
         }
     }
 
     var body: some View {
         ZStack {
-            // Achtergrond ring
-            Circle()
-                .stroke(Color.white.opacity(0.08), lineWidth: 10)
-                .padding(10)
-
-            // Voortgang ring
+            Circle().stroke(Color.white.opacity(0.08), lineWidth: 18).padding(24)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(
-                    Color.yellow,
-                    style: StrokeStyle(lineWidth: 10, lineCap: .round)
-                )
+                .stroke(Color.yellow, style: StrokeStyle(lineWidth: 18, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .padding(10)
-
-            VStack(spacing: 2) {
-                // Score
+                .padding(24)
+            VStack(spacing: 6) {
                 Text("\(completedCount)/5")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-
-                // Volgende gebedsnaam
+                Text(isArabic ? "صلوات" : "Prayers")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
                 if let next = nextPrayer {
-                    let isArabic = NoorWidgetShared.resolvedLanguage(entry.configuration.language) == .arabic
                     Text(isArabic ? arabicName(next.0) : next.0)
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundStyle(.yellow)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                        .padding(.top, 4)
                 } else {
                     Text("الحمد لله")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .foregroundStyle(.yellow.opacity(0.8))
+                        .padding(.top, 4)
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(8)
+        .padding(16)
     }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// MARK: - 8. Qibla Compass
-// Gebaseerd op ContentView: QiblaFacePreview
-// Kompas met pijl naar Kaaba + graden
-// ─────────────────────────────────────────────────────────────────
-private struct SmallQiblaCompassBody: View {
-    let entry: NoorWidgetEntry
-
+private struct LargeQiblaCompassBody: View {
+    let entry: NoorLargeWidgetEntry
     private var qiblaDir: Double? {
         let lat = NoorWidgetShared.defaults.double(forKey: "noor.lastLatitude")
         let lon = NoorWidgetShared.defaults.double(forKey: "noor.lastLongitude")
@@ -1247,125 +1647,917 @@ private struct SmallQiblaCompassBody: View {
     var body: some View {
         if let dir = qiblaDir {
             ZStack {
-                // Kompas ticks
-                ForEach(0..<12) { i in
+                ForEach(0..<24) { i in
+                    let isMajor = i % 6 == 0
+                    let isNorth = i == 0
                     Capsule()
-                        .fill(i == 0 ? Color.yellow : Color.white.opacity(0.3))
-                        .frame(width: i % 3 == 0 ? 2 : 1, height: i % 3 == 0 ? 8 : 5)
-                        .offset(y: -54)
-                        .rotationEffect(.degrees(Double(i) * 30))
+                        .fill(isNorth ? Color.yellow : Color.white.opacity(isMajor ? 0.6 : 0.25))
+                        .frame(width: isMajor ? 3 : 1.5, height: isMajor ? 16 : 9)
+                        .offset(y: -130)
+                        .rotationEffect(.degrees(Double(i) * 15))
                 }
-
-                // N label
                 Text("N")
-                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(.yellow)
-                    .offset(y: -40)
-
-                // Qibla pijl
+                    .offset(y: -108)
                 VStack(spacing: 0) {
                     Image(systemName: "arrowtriangle.up.fill")
-                        .font(.system(size: 20, weight: .regular))
+                        .font(.system(size: 36, weight: .regular))
                         .foregroundStyle(.yellow)
-                        .shadow(color: .yellow.opacity(0.5), radius: 5)
-                    Circle()
-                        .fill(Color.yellow)
-                        .frame(width: 5, height: 5)
+                        .shadow(color: .yellow.opacity(0.6), radius: 10)
+                    Circle().fill(Color.yellow).frame(width: 10, height: 10)
                 }
                 .rotationEffect(.degrees(dir))
-
-                // Graden onderaan
-                VStack {
+                VStack(spacing: 4) {
                     Spacer()
                     Text("\(Int(dir.rounded()))°")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                     Text("QIBLA")
-                        .font(.system(size: 8, weight: .semibold, design: .rounded))
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white.opacity(0.55))
-                        .tracking(1.5)
+                        .tracking(2)
                 }
-                .padding(.bottom, 12)
+                .padding(.bottom, 20)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            // Geen locatie beschikbaar
-            VStack(spacing: 6) {
-                Image(systemName: "location.slash")
-                    .font(.system(size: 24))
-                    .foregroundStyle(.white.opacity(0.4))
-                Text("Set Location")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.5))
-                    .multilineTextAlignment(.center)
+            VStack(spacing: 10) {
+                Image(systemName: "location.slash").font(.system(size: 36)).foregroundStyle(.white.opacity(0.4))
+                Text("Set Location").font(.system(size: 14, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.5)).multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(14)
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// MARK: - 9. Current Weather
-// Gebaseerd op ContentView: WeatherSimpleFace
-// Icoon groot, temperatuur, conditie, H/L
-// ─────────────────────────────────────────────────────────────────
-private struct SmallCurrentWeatherBody: View {
-    let entry: NoorWidgetEntry
+private struct LargeWeekPulseBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(lang) == .arabic }
 
     var body: some View {
-        VStack(spacing: 5) {
-            if let weather = entry.weather {
-                Image(systemName: weather.symbol)
-                    .font(.system(size: 28, weight: .light))
-                    .foregroundStyle(.white)
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: entry.date)
+        let adjustedDay = weekday == 1 ? 7 : weekday - 1
 
-                let tempText = "\(Int(weather.tempC.rounded()))"
-                let displayTemp = NoorWidgetShared.resolvedDigits(
-                    entry.configuration.digits,
-                    language: entry.configuration.language
-                ) == .arabic
-                    ? NoorWidgetShared.toArabicDigits(tempText)
-                    : tempText
-
-                Text(displayTemp + "°")
-                    .font(.system(size: 38, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.yellow)
-
-                Text(NoorWidgetShared.resolvedLanguage(entry.configuration.language) == .arabic
-                     ? localizedConditionArabic(weather.label)
-                     : weather.label)
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.75))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-
-                // H / L temperatuur
-                if let high = weather.highC, let low = weather.lowC {
-                    HStack(spacing: 8) {
-                        Label(
-                            "\(Int(high.rounded()))°",
-                            systemImage: "arrow.up"
-                        )
-                        Label(
-                            "\(Int(low.rounded()))°",
-                            systemImage: "arrow.down"
-                        )
-                    }
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.5))
+        VStack(spacing: 28) {
+            Text(isArabic ? "نبض الأسبوع" : "Week Pulse")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+            HStack(spacing: 18) {
+                ForEach(1...7, id: \.self) { day in
+                    let isToday = day == adjustedDay
+                    Circle()
+                        .fill(isToday ? Color.yellow : Color.white.opacity(0.15))
+                        .frame(width: isToday ? 28 : 18, height: isToday ? 28 : 18)
+                        .overlay(Circle().stroke(Color.white.opacity(isToday ? 0.4 : 0.1), lineWidth: 2).scaleEffect(isToday ? 1.4 : 1.0))
                 }
-            } else {
-                Image(systemName: "cloud.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(.white.opacity(0.4))
-                Text("--")
-                    .font(.system(size: 32, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.4))
+            }
+            Text(NoorWidgetShared.weekdayNameFull(entry.date, language: lang))
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 40)
+    }
+}
+
+private struct LargeMonthProgressBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(lang) == .arabic }
+
+    var body: some View {
+        let calendar = Calendar.current
+        let dayOfMonth = calendar.component(.day, from: entry.date)
+        let daysInMonth = calendar.range(of: .day, in: .month, for: entry.date)?.count ?? 30
+        let columns = 10
+        let rows = Int(ceil(Double(daysInMonth) / Double(columns)))
+
+        VStack(spacing: 24) {
+            Text(isArabic ? "تقدم الشهر" : "Month Progress")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+            VStack(spacing: 8) {
+                ForEach(0..<rows, id: \.self) { row in
+                    HStack(spacing: 8) {
+                        ForEach(0..<columns, id: \.self) { col in
+                            let dayNum = row * columns + col + 1
+                            if dayNum <= daysInMonth {
+                                let isPassed = dayNum <= dayOfMonth
+                                Circle()
+                                    .fill(isPassed ? Color.yellow : Color.white.opacity(0.15))
+                                    .frame(width: isPassed ? 14 : 10, height: isPassed ? 14 : 10)
+                            } else {
+                                Color.clear.frame(width: 10, height: 10)
+                            }
+                        }
+                    }
+                }
+            }
+            HStack {
+                Text(isArabic ? "يوم" : "Day").font(.system(size: 18, weight: .semibold, design: .rounded)).foregroundStyle(.white)
+                Text(NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                    ? NoorWidgetShared.toArabicDigits("\(dayOfMonth)") : "\(dayOfMonth)")
+                    .font(.system(size: 22, weight: .bold, design: .rounded)).foregroundStyle(.yellow)
+                Text(isArabic ? "من" : "of").font(.system(size: 18, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+                Text(NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                    ? NoorWidgetShared.toArabicDigits("\(daysInMonth)") : "\(daysInMonth)")
+                    .font(.system(size: 18, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.6))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(10)
+        .padding(.vertical, 36)
+    }
+}
+
+private struct LargeYearJourneyBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(lang) == .arabic }
+
+    var body: some View {
+        let calendar = Calendar.current
+        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: entry.date) ?? 1
+        let year = calendar.component(.year, from: entry.date)
+        let isLeapYear = calendar.range(of: .day, in: .year, for: entry.date)?.count == 366
+        let totalDays = isLeapYear ? 366 : 365
+        let currentMonth = calendar.component(.month, from: entry.date)
+
+        VStack(spacing: 28) {
+            Text(isArabic ? "رحلة السنة" : "Year Journey")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+            HStack(spacing: 14) {
+                ForEach(1...12, id: \.self) { month in
+                    let isPassed = month < currentMonth
+                    let isCurrent = month == currentMonth
+                    Circle()
+                        .fill(isCurrent ? Color.yellow : (isPassed ? Color.white.opacity(0.5) : Color.white.opacity(0.15)))
+                        .frame(width: isCurrent ? 22 : 13, height: isCurrent ? 22 : 13)
+                        .overlay(Circle().stroke(Color.yellow.opacity(isCurrent ? 0.6 : 0), lineWidth: 3).scaleEffect(isCurrent ? 1.5 : 1.0))
+                }
+            }
+            VStack(spacing: 8) {
+                Text(NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                    ? NoorWidgetShared.toArabicDigits("\(year)") : "\(year)")
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                HStack {
+                    Text(isArabic ? "يوم" : "Day").font(.system(size: 16, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+                    Text(NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                        ? NoorWidgetShared.toArabicDigits("\(dayOfYear)") : "\(dayOfYear)")
+                        .font(.system(size: 20, weight: .semibold, design: .rounded)).foregroundStyle(.yellow)
+                    Text(isArabic ? "من" : "of").font(.system(size: 16, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+                    Text(NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+                        ? NoorWidgetShared.toArabicDigits("\(totalDays)") : "\(totalDays)")
+                        .font(.system(size: 16, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 40)
+    }
+}
+
+private struct LargeTripleOrbitBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(entry.configuration.language) == .arabic }
+
+    var body: some View {
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: entry.date)
+        let adjustedDay = weekday == 1 ? 7 : weekday - 1
+        let weekProgress = Double(adjustedDay) / 7.0
+        let dayOfMonth = calendar.component(.day, from: entry.date)
+        let daysInMonth = Double(calendar.range(of: .day, in: .month, for: entry.date)?.count ?? 30)
+        let monthProgress = Double(dayOfMonth) / daysInMonth
+        let dayOfYear = Double(calendar.ordinality(of: .day, in: .year, for: entry.date) ?? 1)
+        let totalDays = Double(calendar.range(of: .day, in: .year, for: entry.date)?.count ?? 365)
+        let yearProgress = dayOfYear / totalDays
+        let orbitSize: CGFloat = 290
+
+        ZStack {
+            Circle().fill(.black.opacity(0.9)).overlay(Circle().stroke(Color.white.opacity(0.08), lineWidth: 1))
+            Circle().stroke(Color.white.opacity(0.1), lineWidth: 2).padding(10)
+            Circle().fill(Color.white.opacity(0.8)).frame(width: 10, height: 10)
+                .offset(y: -(orbitSize / 2 - 10 - 5))
+                .rotationEffect(.degrees(yearProgress * 360 - 90))
+            Circle().stroke(Color.white.opacity(0.15), lineWidth: 2).padding(50)
+            Circle().fill(Color.white).frame(width: 12, height: 12)
+                .offset(y: -(orbitSize / 2 - 50 - 6))
+                .rotationEffect(.degrees(monthProgress * 360 - 90))
+            Circle().stroke(Color.yellow.opacity(0.3), lineWidth: 2).padding(95)
+            Circle().fill(Color.yellow).frame(width: 15, height: 15)
+                .offset(y: -(orbitSize / 2 - 95 - 8))
+                .rotationEffect(.degrees(weekProgress * 360 - 90))
+                .shadow(color: .yellow.opacity(0.6), radius: 8)
+            VStack(spacing: 6) {
+                Text(isArabic ? "المدارات" : "Orbits")
+                    .font(.system(size: 12, weight: .bold, design: .rounded)).foregroundStyle(.white.opacity(0.5))
+                Text("W • M • Y")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded)).foregroundStyle(.yellow)
+            }
+        }
+        .frame(width: orbitSize, height: orbitSize)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct LargeLuminousDigitalBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(lang) == .arabic }
+
+    var body: some View {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: entry.date)
+        let hour = comps.hour ?? 0
+        let minute = comps.minute ?? 0
+        let hourStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(format: "%02d", hour))
+            : String(format: "%02d", hour)
+        let minuteStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(format: "%02d", minute))
+            : String(format: "%02d", minute)
+
+        return VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: -2) {
+                Text(hourStr).font(.system(size: 100, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+                Text(minuteStr).font(.system(size: 88, weight: .bold, design: .rounded)).foregroundStyle(.white)
+            }
+            Text(isArabic ? "رقمي مضيء" : "Luminous Digital")
+                .font(.system(size: 14, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(20)
+    }
+}
+
+private struct LargeCalendarDuoBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+
+    var body: some View {
+        let month = NoorWidgetShared.monthName(entry.date, language: lang).uppercased()
+        let weekday = NoorWidgetShared.weekdayNameFull(entry.date, language: lang).uppercased()
+        let day = NoorWidgetShared.dayNumber(entry.date, digits: digits, language: lang)
+        let shortMonth = NoorWidgetShared.shortMonth(entry.date, language: lang).uppercased()
+
+        HStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(month).font(.system(size: 20, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+                LargeCapsuleLabel(text: weekday, color: .white.opacity(0.10), textColor: .white)
+            }
+            Spacer()
+            VStack(spacing: 16) {
+                LargeCapsuleLabel(text: shortMonth, color: .yellow, textColor: .black)
+                LargeCapsuleLabel(text: day, color: .white.opacity(0.10), textColor: .white)
+            }
+        }
+        .padding(24)
+    }
+}
+
+private struct LargeCapsuleLabel: View {
+    let text: String
+    let color: Color
+    let textColor: Color
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 18, weight: .bold, design: .rounded))
+            .foregroundStyle(textColor)
+            .padding(.horizontal, 20).padding(.vertical, 12)
+            .background(color).clipShape(Capsule())
+    }
+}
+
+private struct LargeMinimalClockBody: View {
+    let entry: NoorLargeWidgetEntry
+
+    var body: some View {
+        let formatter = DateFormatter()
+        let _ = { formatter.dateFormat = "hh:mm a"; formatter.locale = Locale.current }()
+        return Text(formatter.string(from: entry.date))
+            .font(.system(size: 56, weight: .bold, design: .monospaced))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(24)
+    }
+}
+
+private struct LargeDualLineTimeBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(lang) == .arabic }
+
+    var body: some View {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: entry.date)
+        let hour = comps.hour ?? 0
+        let minute = comps.minute ?? 0
+        let timeStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(format: "%02d:%02d", hour, minute))
+            : String(format: "%02d:%02d", hour, minute)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text(timeStr)
+                .font(.system(size: 72, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+                .overlay(alignment: .bottomLeading) {
+                    Rectangle().fill(Color.yellow).frame(height: 8).offset(y: 14)
+                }
+            Text(isArabic ? "وقت ثنائي" : "Dual Line Time")
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(24)
+    }
+}
+
+private struct LargeGregorianBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+
+    var body: some View {
+        HStack(spacing: 20) {
+            LargeRoundedRectInfo(
+                title: NoorWidgetShared.shortMonth(entry.date, language: lang).uppercased(),
+                value: NoorWidgetShared.dayNumber(entry.date, digits: digits, language: lang),
+                accent: .yellow, textColor: .black)
+            LargeRoundedRectInfo(
+                title: NoorWidgetShared.weekdayNameFull(entry.date, language: lang).uppercased(),
+                value: NoorWidgetShared.yearNumber(entry.date, digits: digits, language: lang),
+                accent: .white.opacity(0.10), textColor: .white)
+        }
+        .padding(20)
+    }
+}
+
+private struct LargeHijriBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+
+    var body: some View {
+        let hijri = Calendar(identifier: .islamicUmmAlQura)
+        let comps = hijri.dateComponents([.day, .month, .year], from: entry.date)
+        let dayStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(comps.day ?? 0))
+            : String(comps.day ?? 0)
+
+        return HStack(spacing: 20) {
+            LargeRoundedRectInfo(title: NoorWidgetShared.hijriMonthName(entry.date, language: lang), value: dayStr, accent: .white.opacity(0.10), textColor: .white)
+            LargeRoundedRectInfo(title: "Hijri", value: NoorWidgetShared.hijriYearNumber(entry.date, digits: digits, language: lang), accent: .yellow, textColor: .black)
+        }
+        .padding(20)
+    }
+}
+
+private struct LargeRoundedRectInfo: View {
+    let title: String
+    let value: String
+    var accent: Color = .yellow
+    var textColor: Color = .black
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(textColor == .black ? .black.opacity(0.7) : textColor.opacity(0.7))
+                .lineLimit(1).minimumScaleFactor(0.7)
+            Text(value)
+                .font(.system(size: 52, weight: .bold, design: .rounded))
+                .foregroundStyle(textColor)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 28)
+        .background(accent)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+private struct LargeThuluthSmallBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+
+    var body: some View {
+        let hijri = Calendar(identifier: .islamicUmmAlQura)
+        let hComps = hijri.dateComponents([.day, .month, .year], from: entry.date)
+        let dayStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(hComps.day ?? 0))
+            : String(hComps.day ?? 0)
+
+        VStack(spacing: 10) {
+            Text(NoorWidgetShared.dayNumber(entry.date, digits: digits, language: lang))
+                .font(.custom("DecoType Thuluth", size: 100)).foregroundStyle(.yellow).shadow(color: Color.yellow.opacity(0.3), radius: 8)
+            Text(NoorWidgetShared.shortMonth(entry.date, language: lang).uppercased())
+                .font(.custom("DecoType Thuluth", size: 28)).foregroundStyle(.white)
+            Text(dayStr + " " + NoorWidgetShared.hijriMonthName(entry.date, language: lang))
+                .font(.custom("DecoType Thuluth", size: 22)).foregroundStyle(.white.opacity(0.7)).lineLimit(1).minimumScaleFactor(0.6)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(20)
+    }
+}
+
+private struct LargeThuluthMediumBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+
+    var body: some View {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: entry.date)
+        let hour = comps.hour ?? 0; let minute = comps.minute ?? 0
+        let hourStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(format: "%02d", hour)) : String(format: "%02d", hour)
+        let minuteStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(format: "%02d", minute)) : String(format: "%02d", minute)
+
+        return VStack(spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(hourStr).font(.custom("DecoType Thuluth", size: 80)).foregroundStyle(.white)
+                Text(":").font(.system(size: 64, weight: .thin)).foregroundStyle(.yellow).offset(y: -4)
+                Text(minuteStr).font(.custom("DecoType Thuluth", size: 80)).foregroundStyle(.yellow)
+            }
+            Text(NoorWidgetShared.weekdayNameFull(entry.date, language: lang) + " · " + NoorWidgetShared.dayNumber(entry.date, digits: digits, language: lang) + " " + NoorWidgetShared.monthName(entry.date, language: lang))
+                .font(.custom("DecoType Thuluth", size: 28)).foregroundStyle(.white.opacity(0.7)).lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center).padding(20)
+    }
+}
+
+private struct LargeThuluthLargeBody: View {
+    let entry: NoorLargeWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var digits: WidgetDigits { entry.configuration.digits }
+
+    var body: some View {
+        let hijri = Calendar(identifier: .islamicUmmAlQura)
+        let hComps = hijri.dateComponents([.day, .month, .year], from: entry.date)
+        let dayOfYear = Double(hijri.ordinality(of: .day, in: .year, for: entry.date) ?? 1)
+        let totalDays = Double(hijri.range(of: .day, in: .year, for: entry.date)?.count ?? 354)
+        let progress = max(0.0, min(1.0, dayOfYear / totalDays))
+        let dayStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(hComps.day ?? 0)) : String(hComps.day ?? 0)
+        let yearStr = NoorWidgetShared.resolvedDigits(digits, language: lang) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(hComps.year ?? 0)) : String(hComps.year ?? 0)
+
+        return ZStack {
+            Circle().stroke(Color.white.opacity(0.08), lineWidth: 20).padding(16)
+            Circle().trim(from: 0, to: progress)
+                .stroke(AngularGradient(gradient: Gradient(colors: [Color.yellow.opacity(0.3), Color.yellow, Color.yellow.opacity(0.3)]), center: .center), style: StrokeStyle(lineWidth: 20, lineCap: .round))
+                .rotationEffect(.degrees(-90)).padding(16)
+            VStack(spacing: 6) {
+                Text(dayStr).font(.custom("DecoType Thuluth", size: 80)).foregroundStyle(.yellow)
+                Text(NoorWidgetShared.hijriMonthName(entry.date, language: lang))
+                    .font(.custom("DecoType Thuluth", size: 30)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7).padding(.horizontal, 36)
+                Text(yearStr + " هـ").font(.system(size: 18, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(20)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MARK: - NoorMediumWidgetView
+// ─────────────────────────────────────────────────────────────────
+
+struct NoorMediumWidgetView: View {
+    let entry: NoorMediumWidgetEntry
+
+    var body: some View {
+        ZStack {
+            switch entry.configuration.face {
+            case .clock:           clockBody
+            case .date:            dateBody
+            case .weather:         weatherBody
+            case .currentWeather:  currentWeatherBody
+            case .compactWeather:  compactWeatherBody
+            case .luminousDigital: luminousDigitalBody
+            case .calendarDuo:     calendarDuoBody
+            case .minimalClock:    minimalClockBody
+            case .dualLineTime:    dualLineTimeBody
+            case .gregorian:       gregorianBody
+            case .hijri:           hijriBody
+            case .weekPulse:       weekPulseBody
+            case .monthProgress:   monthProgressBody
+            case .yearJourney:     yearJourneyBody
+            }
+        }
+        .containerBackground(for: .widget) {
+            NoorWidgetShared.widgetBackground(for: entry.configuration.background)
+        }
+    }
+
+    private var clockBody: some View {
+        VStack(spacing: 6) {
+            Text(NoorWidgetShared.formatTime(entry.date, language: entry.configuration.language, digits: entry.configuration.digits))
+                .font(.system(size: 30, weight: .bold, design: .rounded)).foregroundStyle(.white)
+            let dateText = NoorWidgetShared.formatDate(entry.date, language: entry.configuration.language, digits: entry.configuration.digits, calendar: entry.configuration.calendar, format: entry.configuration.dateFormat)
+            if !dateText.isEmpty {
+                Text(dateText).font(.system(size: 12, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.75))
+            }
+        }
+        .padding(14)
+    }
+
+    private var dateBody: some View {
+        VStack(spacing: 8) {
+            Text(NoorWidgetShared.formatDate(entry.date, language: entry.configuration.language, digits: entry.configuration.digits, calendar: entry.configuration.calendar, format: entry.configuration.dateFormat))
+                .font(.system(size: 16, weight: .semibold, design: .rounded)).foregroundStyle(.white).multilineTextAlignment(.center).lineLimit(2)
+        }
+        .padding(12)
+    }
+
+    private var weatherBody: some View {
+        let resolvedLanguage = NoorWidgetShared.resolvedLanguage(entry.configuration.language)
+        return VStack(spacing: 6) {
+            if let weather = entry.weather {
+                Image(systemName: weather.symbol).font(.system(size: 24, weight: .regular)).foregroundStyle(.white)
+                let temperatureText = "\(Int(weather.tempC.rounded()))"
+                Text((NoorWidgetShared.resolvedDigits(entry.configuration.digits, language: entry.configuration.language) == .arabic ? NoorWidgetShared.toArabicDigits(temperatureText) : temperatureText) + "°")
+                    .font(.system(size: 30, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+                Text(resolvedLanguage == .arabic ? localizedConditionArabic(weather.label) : weather.label)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.8))
+            } else {
+                Text("--").font(.system(size: 30, weight: .heavy, design: .rounded)).foregroundStyle(.white)
+            }
+        }
+        .padding(12)
+    }
+
+    private var currentWeatherBody: some View {
+        let locationName = NoorWidgetShared.defaults.string(forKey: "noor.lastLocationName") ?? "—"
+        let resolvedLanguage = NoorWidgetShared.resolvedLanguage(entry.configuration.language)
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm"
+        timeFormatter.locale = Locale(identifier: resolvedLanguage == .arabic ? "ar" : "en")
+        let dateFormatter = DateFormatter()
+        dateFormatter.setLocalizedDateFormatFromTemplate("d MMM y")
+        dateFormatter.locale = Locale(identifier: resolvedLanguage == .arabic ? "ar" : "en")
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(locationName).font(.system(size: 12, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.7)).lineLimit(1).truncationMode(.tail)
+                Spacer()
+                if let weather = entry.weather { Image(systemName: weather.symbol).font(.system(size: 22, weight: .regular)).foregroundStyle(.white) }
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                if let weather = entry.weather {
+                    let temperatureText = "\(Int(weather.tempC.rounded()))"
+                    Text((NoorWidgetShared.resolvedDigits(entry.configuration.digits, language: entry.configuration.language) == .arabic ? NoorWidgetShared.toArabicDigits(temperatureText) : temperatureText) + "°")
+                        .font(.system(size: 42, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+                } else {
+                    Text("--").font(.system(size: 42, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+                }
+                Spacer()
+                if let weather = entry.weather, let high = weather.highC, let low = weather.lowC {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("H: \(Int(high.rounded()))°").font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.75))
+                        Text("L: \(Int(low.rounded()))°").font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.75))
+                    }
+                }
+            }
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(timeFormatter.string(from: entry.date)).font(.system(size: 22, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                    Text(dateFormatter.string(from: entry.date)).font(.system(size: 11, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+                }
+                Spacer()
+                Text("Updated now").font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+            }
+        }
+        .padding(14).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private var compactWeatherBody: some View {
+        let locationName = NoorWidgetShared.defaults.string(forKey: "noor.lastLocationName") ?? "—"
+        let resolvedLanguage = NoorWidgetShared.resolvedLanguage(entry.configuration.language)
+        let locale = Locale(identifier: resolvedLanguage == .arabic ? "ar" : "en")
+        let timeFormatter = DateFormatter(); timeFormatter.dateFormat = "HH:mm"; timeFormatter.locale = locale
+        let dayFormatter = DateFormatter(); dayFormatter.setLocalizedDateFormatFromTemplate("EEEE"); dayFormatter.locale = locale
+        let monthFormatter = DateFormatter(); monthFormatter.setLocalizedDateFormatFromTemplate("d MMM"); monthFormatter.locale = locale
+
+        return GeometryReader { geo in
+            let w = geo.size.width; let h = geo.size.height
+            let scale = min(w / 310.0, h / 146.0)
+            HStack(alignment: .center, spacing: 12 * scale) {
+                VStack(alignment: .leading, spacing: 4 * scale) {
+                    if let weather = entry.weather {
+                        HStack(spacing: 5 * scale) {
+                            Image(systemName: weather.symbol).font(.system(size: 36 * scale, weight: .regular)).foregroundStyle(.white)
+                            Text((NoorWidgetShared.resolvedDigits(entry.configuration.digits, language: entry.configuration.language) == .arabic ? NoorWidgetShared.toArabicDigits(String(Int(weather.tempC.rounded()))) : "\(Int(weather.tempC.rounded()))") + "°")
+                                .font(.system(size: 24 * scale, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+                        }
+                    } else {
+                        Text("--").font(.system(size: 24 * scale, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+                    }
+                    VStack(alignment: .leading, spacing: 2 * scale) {
+                        if let weather = entry.weather {
+                            Text(weather.label).font(.system(size: 11 * scale, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.7)).lineLimit(1).minimumScaleFactor(0.8)
+                        }
+                        if let weather = entry.weather, let high = weather.highC, let low = weather.lowC {
+                            let digits = NoorWidgetShared.resolvedDigits(entry.configuration.digits, language: entry.configuration.language)
+                            let highText = digits == .arabic ? NoorWidgetShared.toArabicDigits(String(Int(high.rounded()))) : "\(Int(high.rounded()))"
+                            let lowText = digits == .arabic ? NoorWidgetShared.toArabicDigits(String(Int(low.rounded()))) : "\(Int(low.rounded()))"
+                            Text("H: \(highText)  L: \(lowText)°").font(.system(size: 10 * scale, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+                        }
+                    }
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2 * scale) {
+                    Text(locationName).font(.system(size: 11 * scale, weight: .bold, design: .rounded)).foregroundStyle(.white.opacity(0.7)).lineLimit(1)
+                    Text(dayFormatter.string(from: entry.date)).font(.custom("DecoType Thuluth", size: 18 * scale)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                    Spacer().frame(height: 4 * scale)
+                    Text(timeFormatter.string(from: entry.date)).font(.system(size: 14 * scale, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                    Text(monthFormatter.string(from: entry.date)).font(.system(size: 10 * scale, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+                }
+            }
+            .padding(.horizontal, 14 * scale).padding(.vertical, 10 * scale)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var luminousDigitalBody: some View {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: entry.date)
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(String(format: "%02d", comps.hour ?? 0)).font(.system(size: 50, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+            Text(String(format: "%02d", comps.minute ?? 0)).font(.system(size: 44, weight: .bold, design: .rounded)).foregroundStyle(.white)
+            Text("Luminous Digital").font(.system(size: 11, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading).padding(14)
+    }
+
+    private var calendarDuoBody: some View {
+        let month = NoorWidgetShared.monthName(entry.date, language: entry.configuration.language).uppercased()
+        let weekday = NoorWidgetShared.weekdayNameFull(entry.date, language: NoorWidgetShared.resolvedLanguage(entry.configuration.language)).uppercased()
+        let day = NoorWidgetShared.dayNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language)
+        let shortMonth = NoorWidgetShared.shortMonth(entry.date, language: entry.configuration.language).uppercased()
+
+        return HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(month).font(.system(size: 14, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+                MediumCapsuleLabel(text: weekday, color: .white.opacity(0.10), textColor: .white)
+            }
+            Spacer()
+            VStack(spacing: 8) {
+                MediumCapsuleLabel(text: shortMonth, color: .yellow, textColor: .black)
+                MediumCapsuleLabel(text: day, color: .white.opacity(0.10), textColor: .white)
+            }
+        }
+        .padding(14)
+    }
+
+    private var minimalClockBody: some View {
+        let formatter = DateFormatter(); formatter.dateFormat = "hh:mm a"; formatter.locale = Locale.current
+        return Text(formatter.string(from: entry.date))
+            .font(.system(size: 40, weight: .bold, design: .monospaced)).foregroundStyle(.white)
+            .frame(maxWidth: .infinity, alignment: .leading).padding(14)
+    }
+
+    private var dualLineTimeBody: some View {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: entry.date)
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(String(format: "%02d:%02d", comps.hour ?? 0, comps.minute ?? 0))
+                .font(.system(size: 44, weight: .heavy, design: .rounded)).foregroundStyle(.white)
+                .overlay(alignment: .bottomLeading) { Rectangle().fill(Color.yellow).frame(height: 5).offset(y: 8) }
+            Text("Dual Line Time").font(.system(size: 12, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading).padding(14)
+    }
+
+    private var gregorianBody: some View {
+        let weekday = NoorWidgetShared.weekdayNameFull(entry.date, language: NoorWidgetShared.resolvedLanguage(entry.configuration.language)).uppercased()
+        let day = NoorWidgetShared.dayNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language)
+        let month = NoorWidgetShared.shortMonth(entry.date, language: entry.configuration.language).uppercased()
+        let year = NoorWidgetShared.yearNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language)
+
+        return HStack(spacing: 12) {
+            MediumRoundedRectInfo(title: weekday, value: year, accent: .white.opacity(0.10), textColor: .white)
+            MediumRoundedRectInfo(title: month, value: day, accent: .yellow, textColor: .black)
+        }
+        .padding(14)
+    }
+
+    private var hijriBody: some View {
+        let hijri = Calendar(identifier: .islamicUmmAlQura)
+        let comps = hijri.dateComponents([.day, .month, .year], from: entry.date)
+        let day = NoorWidgetShared.resolvedDigits(entry.configuration.digits, language: entry.configuration.language) == .arabic
+            ? NoorWidgetShared.toArabicDigits(String(comps.day ?? 0)) : String(comps.day ?? 0)
+        let month = NoorWidgetShared.hijriMonthName(entry.date, language: NoorWidgetShared.resolvedLanguage(entry.configuration.language))
+        let year = NoorWidgetShared.hijriYearNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language)
+
+        return HStack(spacing: 12) {
+            MediumRoundedRectInfo(title: month, value: day, accent: .white.opacity(0.10), textColor: .white)
+            MediumRoundedRectInfo(title: "Hijri", value: year, accent: .yellow, textColor: .black)
+        }
+        .padding(14)
+    }
+
+    private var weekPulseBody: some View {
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: entry.date)
+        let adjustedDay = weekday == 1 ? 7 : weekday - 1
+
+        return VStack(spacing: 10) {
+            Text("Week Pulse").font(.system(size: 12, weight: .bold, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+            HStack(spacing: 10) {
+                ForEach(1...7, id: \.self) { day in
+                    let isToday = day == adjustedDay
+                    Circle().fill(isToday ? Color.yellow : Color.white.opacity(0.15))
+                        .frame(width: isToday ? 16 : 10, height: isToday ? 16 : 10)
+                }
+            }
+            Text(NoorWidgetShared.weekdayNameFull(entry.date, language: NoorWidgetShared.resolvedLanguage(entry.configuration.language)))
+                .font(.system(size: 14, weight: .semibold, design: .rounded)).foregroundStyle(.white)
+        }
+        .padding(14)
+    }
+
+    private var monthProgressBody: some View {
+        let calendar = Calendar.current
+        let dayOfMonth = calendar.component(.day, from: entry.date)
+        let daysInMonth = calendar.range(of: .day, in: .month, for: entry.date)?.count ?? 30
+        let columns = 10; let rows = Int(ceil(Double(daysInMonth) / Double(columns)))
+
+        return VStack(spacing: 10) {
+            Text("Month Progress").font(.system(size: 12, weight: .bold, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+            VStack(spacing: 4) {
+                ForEach(0..<rows, id: \.self) { row in
+                    HStack(spacing: 4) {
+                        ForEach(0..<columns, id: \.self) { col in
+                            let dayNum = row * columns + col + 1
+                            if dayNum <= daysInMonth {
+                                let isPassed = dayNum <= dayOfMonth
+                                Circle().fill(isPassed ? Color.yellow : Color.white.opacity(0.15))
+                                    .frame(width: isPassed ? 8 : 6, height: isPassed ? 8 : 6)
+                            } else { Color.clear.frame(width: 6, height: 6) }
+                        }
+                    }
+                }
+            }
+            Text("Day \(dayOfMonth) of \(daysInMonth)").font(.system(size: 12, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+        }
+        .padding(14)
+    }
+
+    private var yearJourneyBody: some View {
+        let calendar = Calendar.current
+        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: entry.date) ?? 1
+        let year = calendar.component(.year, from: entry.date)
+        let totalDays = calendar.range(of: .day, in: .year, for: entry.date)?.count ?? 365
+        let currentMonth = calendar.component(.month, from: entry.date)
+
+        return VStack(spacing: 10) {
+            Text("Year Journey").font(.system(size: 12, weight: .bold, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+            HStack(spacing: 8) {
+                ForEach(1...12, id: \.self) { month in
+                    let isCurrent = month == currentMonth
+                    Circle().fill(isCurrent ? Color.yellow : Color.white.opacity(0.15))
+                        .frame(width: isCurrent ? 14 : 8, height: isCurrent ? 14 : 8)
+                }
+            }
+            VStack(spacing: 2) {
+                Text("\(year)").font(.system(size: 24, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                Text("Day \(dayOfYear) of \(totalDays)").font(.system(size: 12, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.7))
+            }
+        }
+        .padding(14)
+    }
+
+    private func localizedConditionArabic(_ english: String) -> String {
+        switch english {
+        case "Clear": return "صحو"
+        case "Partly Cloudy": return "غائم جزئياً"
+        case "Fog": return "ضباب"
+        case "Drizzle": return "رذاذ"
+        case "Rain": return "مطر"
+        case "Snow": return "ثلج"
+        case "Showers": return "زخات"
+        case "Thunder": return "عاصفة"
+        default: return english
+        }
+    }
+}
+
+private struct MediumCapsuleLabel: View {
+    let text: String; let color: Color; let textColor: Color
+    var body: some View {
+        Text(text).font(.system(size: 12, weight: .bold, design: .rounded)).foregroundStyle(textColor)
+            .padding(.horizontal, 12).padding(.vertical, 8).background(color).clipShape(Capsule())
+    }
+}
+
+private struct MediumRoundedRectInfo: View {
+    let title: String; let value: String; let accent: Color; let textColor: Color
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(title).font(.system(size: 11, weight: .semibold, design: .rounded)).foregroundStyle(textColor == .black ? .black.opacity(0.7) : textColor.opacity(0.7))
+            Text(value).font(.system(size: 30, weight: .bold, design: .rounded)).foregroundStyle(textColor)
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 16).background(accent).clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MARK: - NoorSmallWidgetView
+// ─────────────────────────────────────────────────────────────────
+
+struct NoorSmallWidgetView: View {
+    let entry: NoorWidgetEntry
+
+    var body: some View {
+        ZStack {
+            switch entry.configuration.face {
+            case .clock:           smallClockBody
+            case .date:            smallDateBody
+            case .weather:         smallWeatherBody
+            case .minimalist:      SmallMinimalistBody(entry: entry)
+            case .gradientRing:    SmallGradientRingBody(entry: entry)
+            case .retroNeon:       SmallRetroNeonBody(entry: entry)
+            case .geometric:       SmallGeometricBody(entry: entry)
+            case .luxuryGold:      SmallLuxuryGoldBody(entry: entry)
+            case .midnight:        SmallMidnightBody(entry: entry)
+            case .prayerProgress:  SmallPrayerProgressBody(entry: entry)
+            case .qiblaCompass:    SmallQiblaCompassBody(entry: entry)
+            case .currentWeather:  SmallCurrentWeatherBody(entry: entry)
+            case .compactWeather:  SmallCompactWeatherBody(entry: entry)
+            case .prayerTimes:     SmallPrayerTimesBody(entry: entry)
+            }
+        }
+        .containerBackground(for: .widget) {
+            NoorWidgetShared.widgetBackground(for: entry.configuration.background)
+        }
+    }
+
+    private var smallDateBody: some View {
+        Group {
+            if entry.configuration.calendar == .hijri { hijriDateBody }
+            else { gregorianDateBody }
+        }
+    }
+
+    private var hijriDateBody: some View {
+        let resolvedLanguage = NoorWidgetShared.resolvedLanguage(entry.configuration.language)
+        return VStack(spacing: 6) {
+            Text(NoorWidgetShared.dayNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language))
+                .font(.custom("DecoType Thuluth", size: 56)).foregroundStyle(.yellow).shadow(color: Color.yellow.opacity(0.3), radius: 6)
+            Text(NoorWidgetShared.shortMonth(entry.date, language: entry.configuration.language).uppercased())
+                .font(.custom("DecoType Thuluth", size: 16)).foregroundStyle(.white)
+            Text(NoorWidgetShared.hijriDayNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language) + " " + NoorWidgetShared.hijriMonthName(entry.date, language: resolvedLanguage))
+                .font(.custom("DecoType Thuluth", size: 14)).foregroundStyle(.white.opacity(0.7)).lineLimit(1).minimumScaleFactor(0.6)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(12)
+    }
+
+    private var gregorianDateBody: some View {
+        let resolvedLanguage = NoorWidgetShared.resolvedLanguage(entry.configuration.language)
+        return VStack(spacing: 10) {
+            Text(NoorWidgetShared.weekdayNameFull(entry.date, language: resolvedLanguage).uppercased())
+                .font(.system(size: 13, weight: .bold, design: .rounded)).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7)
+            Text(NoorWidgetShared.dayNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language))
+                .font(.system(size: 76, weight: .heavy, design: .rounded)).foregroundStyle(.yellow).lineLimit(1).minimumScaleFactor(0.7)
+            Text(NoorWidgetShared.monthName(entry.date, language: resolvedLanguage).uppercased())
+                .font(.system(size: 16, weight: .bold, design: .rounded)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+            Text(NoorWidgetShared.yearNumber(entry.date, digits: entry.configuration.digits, language: entry.configuration.language))
+                .font(.system(size: 13, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(.vertical, 18).padding(.horizontal, 12)
+    }
+
+    private var smallClockBody: some View {
+        VStack(spacing: 10) {
+            Text(NoorWidgetShared.formatTime(entry.date, language: entry.configuration.language, digits: entry.configuration.digits))
+                .font(.system(size: 36, weight: .bold, design: .monospaced)).foregroundStyle(.white).frame(maxWidth: .infinity, alignment: .leading)
+            Text(NoorWidgetShared.formatDate(entry.date, language: entry.configuration.language, digits: entry.configuration.digits, calendar: entry.configuration.calendar, format: entry.configuration.dateFormat))
+                .font(.system(size: 11, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.75)).frame(maxWidth: .infinity, alignment: .leading).lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).padding(12)
+    }
+
+    private var smallWeatherBody: some View {
+        let resolvedLanguage = NoorWidgetShared.resolvedLanguage(entry.configuration.language)
+        return VStack(spacing: 6) {
+            if let weather = entry.weather {
+                Image(systemName: weather.symbol).font(.system(size: 22, weight: .regular)).foregroundStyle(.white)
+                let temperatureText = "\(Int(weather.tempC.rounded()))"
+                Text((NoorWidgetShared.resolvedDigits(entry.configuration.digits, language: entry.configuration.language) == .arabic ? NoorWidgetShared.toArabicDigits(temperatureText) : temperatureText) + "°")
+                    .font(.system(size: 38, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+                Text(resolvedLanguage == .arabic ? localizedConditionArabic(weather.label) : weather.label)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.8)).lineLimit(1)
+            } else {
+                Text("--").font(.system(size: 28, weight: .heavy, design: .rounded)).foregroundStyle(.white)
+            }
+        }
+        .padding(12)
     }
 
     private func localizedConditionArabic(_ english: String) -> String {
@@ -1384,80 +2576,483 @@ private struct SmallCurrentWeatherBody: View {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// MARK: - 10. Compact Weather
-// Gebaseerd op ContentView: WeatherCompactFace
-// Links-uitgelijnd: icoon + locatie bovenaan, temp groot, H/L klein
+// MARK: - Small analog clock bodies
+//  ✅  FIX: TimelineView(.animation) verwijderd.
+//      Alle analoge klokken lezen nu entry.date direct.
+//      De provider bouwt 1-seconde entries zodat iOS de view
+//      elke seconde opnieuw rendert met de juiste hoeken.
 // ─────────────────────────────────────────────────────────────────
-private struct SmallCompactWeatherBody: View {
+
+private struct SmallMinimalistBody: View {
     let entry: NoorWidgetEntry
 
-    private var locationName: String {
-        NoorWidgetShared.defaults.string(forKey: "noor.lastLocationName") ?? "—"
+    var body: some View {
+        // ✅ Gebruik entry.date — geen TimelineView(.animation)
+        let angles = clockAngles(from: entry.date)
+        let size: CGFloat = 130
+
+        ZStack {
+            Circle()
+                .fill(Color.black.opacity(0.0))
+                .overlay(Circle().stroke(Color.white.opacity(0.15), lineWidth: 1))
+
+            ForEach(0..<60) { i in
+                let isHour = i % 5 == 0
+                Rectangle()
+                    .fill(Color.white.opacity(isHour ? 0.85 : 0.25))
+                    .frame(width: isHour ? 2 : 1, height: isHour ? 10 : 5)
+                    .offset(y: -(size / 2 - 14))
+                    .rotationEffect(.degrees(Double(i) * 6))
+            }
+
+            WidgetHand(length: size * 0.30, width: 4, color: .white, angleDeg: angles.hour)
+            WidgetHand(length: size * 0.42, width: 2.5, color: .white.opacity(0.85), angleDeg: angles.minute)
+            WidgetHand(length: size * 0.46, width: 1.5, color: .yellow, angleDeg: angles.second)
+                .shadow(color: .yellow.opacity(0.5), radius: 3)
+
+            Circle().fill(Color.yellow).frame(width: 6, height: 6)
+                .overlay(Circle().stroke(Color.black, lineWidth: 1))
+        }
+        .frame(width: size, height: size)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct SmallGradientRingBody: View {
+    let entry: NoorWidgetEntry
+
+    var body: some View {
+        // ✅ Gebruik entry.date — geen TimelineView(.animation)
+        let angles = clockAngles(from: entry.date)
+        let size: CGFloat = 130
+
+        ZStack {
+            Circle()
+                .stroke(
+                    AngularGradient(
+                        gradient: Gradient(colors: [Color.yellow, Color.white.opacity(0.7), Color.yellow.opacity(0.3), Color.yellow]),
+                        center: .center
+                    ),
+                    lineWidth: 7
+                )
+                .padding(4)
+
+            Circle().stroke(Color.white.opacity(0.08), lineWidth: 1).padding(14)
+
+            ForEach(0..<12) { i in
+                let isMajor = i % 3 == 0
+                Circle()
+                    .fill(Color.white.opacity(isMajor ? 0.85 : 0.35))
+                    .frame(width: isMajor ? 5 : 3, height: isMajor ? 5 : 3)
+                    .offset(y: -(size / 2 - 22))
+                    .rotationEffect(.degrees(Double(i) * 30))
+            }
+
+            WidgetHand(length: size * 0.28, width: 5, color: .white, angleDeg: angles.hour)
+            WidgetHand(length: size * 0.40, width: 3, color: .white.opacity(0.8), angleDeg: angles.minute)
+            WidgetHand(length: size * 0.44, width: 2, color: .yellow, angleDeg: angles.second)
+
+            Circle().fill(Color.white).frame(width: 8, height: 8)
+                .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
+        }
+        .frame(width: size, height: size)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct SmallRetroNeonBody: View {
+    let entry: NoorWidgetEntry
+    private let neon = Color.yellow
+
+    var body: some View {
+        // ✅ Gebruik entry.date — geen TimelineView(.animation)
+        let angles = clockAngles(from: entry.date)
+        let size: CGFloat = 128
+
+        ZStack {
+            Circle().stroke(neon.opacity(0.75), lineWidth: 2).shadow(color: neon.opacity(0.5), radius: 6)
+
+            ForEach(1...12, id: \.self) { i in
+                Text("\(i)")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundStyle(neon.opacity(0.8))
+                    .offset(y: -(size / 2 - 22))
+                    .rotationEffect(.degrees(Double(i) * 30))
+                    .rotationEffect(.degrees(-Double(i) * 30), anchor: .center)
+                    .rotationEffect(.degrees(Double(i) * 30), anchor: .center)
+            }
+
+            WidgetHand(length: size * 0.28, width: 4, color: .white, angleDeg: angles.hour)
+            WidgetHand(length: size * 0.40, width: 2.5, color: .white.opacity(0.9), angleDeg: angles.minute)
+            WidgetHand(length: size * 0.44, width: 1.5, color: neon, angleDeg: angles.second)
+                .shadow(color: neon.opacity(0.8), radius: 5)
+
+            Circle().fill(neon).frame(width: 7, height: 7)
+                .overlay(Circle().stroke(Color.black, lineWidth: 1))
+                .shadow(color: neon.opacity(0.6), radius: 4)
+        }
+        .frame(width: size, height: size)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct SmallGeometricBody: View {
+    let entry: NoorWidgetEntry
+
+    var body: some View {
+        // ✅ Gebruik entry.date — geen TimelineView(.animation)
+        let angles = clockAngles(from: entry.date)
+        let size: CGFloat = 130
+
+        ZStack {
+            ForEach(0..<4) { i in
+                SmallHexagon()
+                    .stroke(Color.white.opacity(0.10 - Double(i) * 0.02), lineWidth: 1)
+                    .padding(CGFloat(i) * 12)
+            }
+
+            ForEach(0..<12) { i in
+                SmallTriangle()
+                    .fill(Color.white.opacity(0.55))
+                    .frame(width: 6, height: 8)
+                    .offset(y: -(size / 2 - 20))
+                    .rotationEffect(.degrees(Double(i) * 30))
+            }
+
+            WidgetHand(length: size * 0.30, width: 5, color: .white, angleDeg: angles.hour)
+            WidgetHand(length: size * 0.42, width: 3, color: .white.opacity(0.8), angleDeg: angles.minute)
+            WidgetHand(length: size * 0.46, width: 2, color: .yellow, angleDeg: angles.second)
+
+            Circle().fill(Color.yellow).frame(width: 8, height: 8)
+        }
+        .frame(width: size, height: size)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct SmallHexagon: Shape {
+    func path(in rect: CGRect) -> Path {
+        let cx = rect.midX; let cy = rect.midY; let r = min(rect.width, rect.height) / 2
+        var p = Path()
+        for i in 0..<6 {
+            let angle = (Double(i) * 60.0 - 30.0) * .pi / 180.0
+            let pt = CGPoint(x: cx + r * CGFloat(cos(angle)), y: cy + r * CGFloat(sin(angle)))
+            i == 0 ? p.move(to: pt) : p.addLine(to: pt)
+        }
+        p.closeSubpath(); return p
+    }
+}
+
+private struct SmallTriangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        p.closeSubpath(); return p
+    }
+}
+
+private struct SmallLuxuryGoldBody: View {
+    let entry: NoorWidgetEntry
+    private let romanNumerals = ["XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"]
+
+    var body: some View {
+        // ✅ Gebruik entry.date — geen TimelineView(.animation)
+        let angles = clockAngles(from: entry.date)
+        let size: CGFloat = 130
+
+        ZStack {
+            Circle().stroke(Color.yellow.opacity(0.55), lineWidth: 2)
+            Circle().stroke(Color.yellow.opacity(0.2), lineWidth: 1).padding(8)
+
+            ForEach(0..<12) { i in
+                Text(romanNumerals[i])
+                    .font(.system(size: 10, weight: .medium, design: .serif))
+                    .foregroundStyle(Color.yellow.opacity(0.85))
+                    .offset(y: -(size / 2 - 26))
+                    .rotationEffect(.degrees(Double(i) * 30))
+                    .rotationEffect(.degrees(-Double(i) * 30), anchor: .center)
+                    .rotationEffect(.degrees(Double(i) * 30), anchor: .center)
+            }
+
+            WidgetHand(length: size * 0.27, width: 5, color: .yellow, angleDeg: angles.hour)
+            WidgetHand(length: size * 0.38, width: 3, color: .yellow.opacity(0.8), angleDeg: angles.minute)
+            WidgetHand(length: size * 0.44, width: 1.5, color: .white, angleDeg: angles.second)
+
+            Circle().fill(Color.yellow).frame(width: 8, height: 8)
+                .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
+                .shadow(color: .yellow.opacity(0.5), radius: 4)
+        }
+        .frame(width: size, height: size)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct SmallMidnightBody: View {
+    let entry: NoorWidgetEntry
+
+    var body: some View {
+        // ✅ Gebruik entry.date — geen TimelineView(.animation)
+        let angles = clockAngles(from: entry.date)
+        let size: CGFloat = 130
+
+        ZStack {
+            Circle()
+                .fill(RadialGradient(colors: [Color(white: 0.12), Color.black], center: .center, startRadius: 10, endRadius: size / 2))
+            Circle().stroke(Color.white.opacity(0.08), lineWidth: 1)
+
+            ForEach(0..<12) { i in
+                Circle().fill(Color.white.opacity(0.28)).frame(width: 3, height: 3)
+                    .offset(y: -(size / 2 - 16))
+                    .rotationEffect(.degrees(Double(i) * 30))
+            }
+
+            Circle()
+                .trim(from: 0, to: 0.5)
+                .stroke(Color.yellow.opacity(0.35), lineWidth: 2)
+                .rotationEffect(.degrees(angles.second))
+                .padding(size * 0.12)
+
+            WidgetHand(length: size * 0.30, width: 4, color: .white.opacity(0.9), angleDeg: angles.hour)
+            WidgetHand(length: size * 0.42, width: 2.5, color: .white.opacity(0.7), angleDeg: angles.minute)
+            WidgetHand(length: size * 0.46, width: 1.2, color: .yellow, angleDeg: angles.second)
+                .shadow(color: .yellow.opacity(0.4), radius: 3)
+
+            Circle().fill(Color.yellow).frame(width: 5, height: 5)
+        }
+        .frame(width: size, height: size)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MARK: - Small non-clock bodies (ongewijzigd)
+// ─────────────────────────────────────────────────────────────────
+
+private struct SmallPrayerProgressBody: View {
+    let entry: NoorWidgetEntry
+
+    private var obligatoryPrayers: [(String, Date)] { entry.prayerTimes.filter { $0.0 != "Sunrise" } }
+    private var completedCount: Int { obligatoryPrayers.filter { $0.1 <= entry.date }.count }
+    private var nextPrayer: (String, Date)? { entry.prayerTimes.first { $0.1 > entry.date } }
+    private var progress: Double {
+        guard obligatoryPrayers.count > 0 else { return 0 }
+        return Double(completedCount) / Double(obligatoryPrayers.count)
+    }
+
+    private func arabicName(_ english: String) -> String {
+        switch english {
+        case "Fajr": return "الفجر"
+        case "Dhuhr": return "الظهر"
+        case "Asr": return "العصر"
+        case "Maghrib": return "المغرب"
+        case "Isha": return "العشاء"
+        case "Sunrise": return "الشروق"
+        default: return english
+        }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Rij 1: icoon + locatienaam
-            HStack(spacing: 5) {
-                if let weather = entry.weather {
-                    Image(systemName: weather.symbol)
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundStyle(.white.opacity(0.85))
+        ZStack {
+            Circle().stroke(Color.white.opacity(0.08), lineWidth: 10).padding(10)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(Color.yellow, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .rotationEffect(.degrees(-90)).padding(10)
+            VStack(spacing: 2) {
+                Text("\(completedCount)/5").font(.system(size: 26, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                if let next = nextPrayer {
+                    let isArabic = NoorWidgetShared.resolvedLanguage(entry.configuration.language) == .arabic
+                    Text(isArabic ? arabicName(next.0) : next.0)
+                        .font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(.yellow).lineLimit(1).minimumScaleFactor(0.7)
+                } else {
+                    Text("الحمد لله").font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(.yellow.opacity(0.8))
                 }
-                Text(locationName)
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.55))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
-            .padding(.bottom, 6)
-
-            Spacer()
-
-            // Temperatuur groot
-            if let weather = entry.weather {
-                let tempText = "\(Int(weather.tempC.rounded()))"
-                let displayTemp = NoorWidgetShared.resolvedDigits(
-                    entry.configuration.digits,
-                    language: entry.configuration.language
-                ) == .arabic
-                    ? NoorWidgetShared.toArabicDigits(tempText)
-                    : tempText
-
-                Text(displayTemp + "°")
-                    .font(.system(size: 42, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.yellow)
-
-                // H / L
-                if let high = weather.highC, let low = weather.lowC {
-                    Text("H:\(Int(high.rounded()))°  L:\(Int(low.rounded()))°")
-                        .font(.system(size: 9, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.45))
-                        .padding(.top, 2)
-                }
-            } else {
-                Text("--")
-                    .font(.system(size: 42, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.35))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(8)
+    }
+}
+
+private struct SmallQiblaCompassBody: View {
+    let entry: NoorWidgetEntry
+    private var qiblaDir: Double? {
+        let lat = NoorWidgetShared.defaults.double(forKey: "noor.lastLatitude")
+        let lon = NoorWidgetShared.defaults.double(forKey: "noor.lastLongitude")
+        guard lat != 0 || lon != 0 else { return nil }
+        return NoorWidgetShared.qiblaDirection(latitude: lat, longitude: lon)
+    }
+
+    var body: some View {
+        if let dir = qiblaDir {
+            ZStack {
+                ForEach(0..<12) { i in
+                    Capsule()
+                        .fill(i == 0 ? Color.yellow : Color.white.opacity(0.3))
+                        .frame(width: i % 3 == 0 ? 2 : 1, height: i % 3 == 0 ? 8 : 5)
+                        .offset(y: -54).rotationEffect(.degrees(Double(i) * 30))
+                }
+                Text("N").font(.system(size: 9, weight: .bold, design: .rounded)).foregroundStyle(.yellow).offset(y: -40)
+                VStack(spacing: 0) {
+                    Image(systemName: "arrowtriangle.up.fill").font(.system(size: 20, weight: .regular)).foregroundStyle(.yellow).shadow(color: .yellow.opacity(0.5), radius: 5)
+                    Circle().fill(Color.yellow).frame(width: 5, height: 5)
+                }
+                .rotationEffect(.degrees(dir))
+                VStack {
+                    Spacer()
+                    Text("\(Int(dir.rounded()))°").font(.system(size: 14, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                    Text("QIBLA").font(.system(size: 8, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.55)).tracking(1.5)
+                }
+                .padding(.bottom, 12)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            VStack(spacing: 6) {
+                Image(systemName: "location.slash").font(.system(size: 24)).foregroundStyle(.white.opacity(0.4))
+                Text("Set Location").font(.system(size: 11, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.5)).multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity).padding(14)
+        }
+    }
+}
+
+private struct SmallCurrentWeatherBody: View {
+    let entry: NoorWidgetEntry
+
+    var body: some View {
+        VStack(spacing: 5) {
+            if let weather = entry.weather {
+                Image(systemName: weather.symbol).font(.system(size: 28, weight: .light)).foregroundStyle(.white)
+                let tempText = "\(Int(weather.tempC.rounded()))"
+                let displayTemp = NoorWidgetShared.resolvedDigits(entry.configuration.digits, language: entry.configuration.language) == .arabic
+                    ? NoorWidgetShared.toArabicDigits(tempText) : tempText
+                Text(displayTemp + "°").font(.system(size: 38, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+                Text(NoorWidgetShared.resolvedLanguage(entry.configuration.language) == .arabic ? localizedConditionArabic(weather.label) : weather.label)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.75)).lineLimit(1).minimumScaleFactor(0.7)
+                if let high = weather.highC, let low = weather.lowC {
+                    HStack(spacing: 8) {
+                        Label("\(Int(high.rounded()))°", systemImage: "arrow.up")
+                        Label("\(Int(low.rounded()))°", systemImage: "arrow.down")
+                    }
+                    .font(.system(size: 9, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.5))
+                }
+            } else {
+                Image(systemName: "cloud.fill").font(.system(size: 28)).foregroundStyle(.white.opacity(0.4))
+                Text("--").font(.system(size: 32, weight: .heavy, design: .rounded)).foregroundStyle(.white.opacity(0.4))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(10)
+    }
+
+    private func localizedConditionArabic(_ english: String) -> String {
+        switch english {
+        case "Clear": return "صحو"
+        case "Partly Cloudy": return "غائم جزئياً"
+        case "Fog": return "ضباب"
+        case "Drizzle": return "رذاذ"
+        case "Rain": return "مطر"
+        case "Snow": return "ثلج"
+        case "Showers": return "زخات"
+        case "Thunder": return "عاصفة"
+        default: return english
+        }
+    }
+}
+
+private struct SmallCompactWeatherBody: View {
+    let entry: NoorWidgetEntry
+    private var locationName: String { NoorWidgetShared.defaults.string(forKey: "noor.lastLocationName") ?? "—" }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 5) {
+                if let weather = entry.weather { Image(systemName: weather.symbol).font(.system(size: 14, weight: .regular)).foregroundStyle(.white.opacity(0.85)) }
+                Text(locationName).font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.55)).lineLimit(1).truncationMode(.tail)
+            }
+            .padding(.bottom, 6)
+            Spacer()
+            if let weather = entry.weather {
+                let tempText = "\(Int(weather.tempC.rounded()))"
+                let displayTemp = NoorWidgetShared.resolvedDigits(entry.configuration.digits, language: entry.configuration.language) == .arabic
+                    ? NoorWidgetShared.toArabicDigits(tempText) : tempText
+                Text(displayTemp + "°").font(.system(size: 42, weight: .heavy, design: .rounded)).foregroundStyle(.yellow)
+                if let high = weather.highC, let low = weather.lowC {
+                    Text("H:\(Int(high.rounded()))°  L:\(Int(low.rounded()))°")
+                        .font(.system(size: 9, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.45)).padding(.top, 2)
+                }
+            } else {
+                Text("--").font(.system(size: 42, weight: .heavy, design: .rounded)).foregroundStyle(.white.opacity(0.35))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).padding(14)
+    }
+}
+
+private struct SmallPrayerTimesBody: View {
+    let entry: NoorWidgetEntry
+    private var lang: WidgetLanguage { entry.configuration.language }
+    private var isArabic: Bool { NoorWidgetShared.resolvedLanguage(lang) == .arabic }
+
+    private func arabicName(_ english: String) -> String {
+        switch english {
+        case "Fajr": return "الفجر"
+        case "Sunrise": return "الشروق"
+        case "Dhuhr": return "الظهر"
+        case "Asr": return "العصر"
+        case "Maghrib": return "المغرب"
+        case "Isha": return "العشاء"
+        default: return english
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            HStack {
+                Text(isArabic ? "مواقيت الصلاة" : "Prayer Times")
+                    .font(.system(size: 8, weight: .bold, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+                Spacer()
+                Text(entry.date, format: Date.FormatStyle().day().month(.abbreviated))
+                    .font(.system(size: 8, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+            }
+            if entry.prayerTimes.isEmpty {
+                Spacer()
+                Text(isArabic ? "يلزم تحديد الموقع" : "Location needed")
+                    .font(.system(size: 8, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.6))
+                Spacer()
+            } else {
+                VStack(spacing: 2) {
+                    ForEach(Array(entry.prayerTimes.enumerated()), id: \.offset) { _, prayer in
+                        let isPast = prayer.1 <= entry.date
+                        HStack(spacing: 4) {
+                            Text(isArabic ? arabicName(prayer.0) : prayer.0.uppercased())
+                                .font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(.yellow).lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity, alignment: .leading)
+                            Text(prayer.1, style: .time)
+                                .font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(isPast ? .white.opacity(0.5) : .white)
+                            if isPast { Text("✓").font(.system(size: 8, weight: .bold)).foregroundStyle(.yellow.opacity(0.6)) }
+                        }
+                        .padding(.vertical, 4).padding(.horizontal, 6)
+                        .background(Color.white.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top).padding(8)
     }
 }
 
 // ─────────────────────────────────────────────────────────────────
 // MARK: - Widget definities
-// NoorSmallWidget  → uitgebreid met nieuwe face-cases
-// NoorMediumWidget → ONGEWIJZIGD
-// NoorLargeWidget  → ONGEWIJZIGD
 // ─────────────────────────────────────────────────────────────────
 
 struct NoorSmallWidget: Widget {
     let kind: String = "NoorSmallWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: NoorWidgetIntent.self, provider: NoorWidgetProvider()) { entry in
+        AppIntentConfiguration(
+            kind: kind, intent: NoorWidgetIntent.self, provider: NoorWidgetProvider()
+        ) { entry in
             NoorSmallWidgetView(entry: entry)
         }
         .configurationDisplayName("Noor Time Small")
@@ -1470,11 +3065,13 @@ struct NoorMediumWidget: Widget {
     let kind: String = "NoorMediumWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: NoorWidgetIntent.self, provider: NoorWidgetProvider()) { entry in
-            NoorConfigurableWidgetView(entry: entry)
+        AppIntentConfiguration(
+            kind: kind, intent: NoorMediumWidgetIntent.self, provider: NoorMediumWidgetProvider()
+        ) { entry in
+            NoorMediumWidgetView(entry: entry)
         }
         .configurationDisplayName("Noor Time Medium")
-        .description("Medium Noor widget with clock, date or weather.")
+        .description("Medium Noor widget with clock, date, weather and extra cards.")
         .supportedFamilies([.systemMedium])
     }
 }
@@ -1483,11 +3080,13 @@ struct NoorLargeWidget: Widget {
     let kind: String = "NoorLargeWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: NoorWidgetIntent.self, provider: NoorWidgetProvider()) { entry in
-            NoorConfigurableWidgetView(entry: entry)
+        AppIntentConfiguration(
+            kind: kind, intent: NoorLargeWidgetIntent.self, provider: NoorLargeWidgetProvider()
+        ) { entry in
+            NoorLargeWidgetView(entry: entry)
         }
         .configurationDisplayName("Noor Time Large")
-        .description("Large Noor widget with clock, date or weather.")
+        .description("Large Noor widget — prayer times, date, clock, weather, dots, Qibla and more.")
         .supportedFamilies([.systemLarge])
     }
 }
