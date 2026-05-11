@@ -7,6 +7,7 @@
 
 import Combine
 import SwiftUI
+import WidgetKit  // ✅ FIX 1: WidgetKit importeren
 
 #if os(iOS)
     import CoreLocation
@@ -85,8 +86,6 @@ extension EnvironmentValues {
 
 enum AppStrings {
     static func t(_ key: String, _ lang: AppLanguage) -> String {
-        // Lightweight fallback localization until a proper strings system is added.
-        // If a key isn't known, show a friendly title-cased version.
         if let known = knownStrings[lang]?[key] { return known }
         return
             key
@@ -458,7 +457,6 @@ struct PrayerTimesData {
                 .sink { [weak self] in self?.now = $0 }
                 .store(in: &cancellables)
 
-            // Prime from defaults if present (avoids empty UI on first launch).
             let defaults = NoorSharedDefaults.shared
             locationName = defaults.string(forKey: NoorSharedKeys.lastLocationName) ?? ""
 
@@ -469,7 +467,6 @@ struct PrayerTimesData {
         func requestLocationIfNeeded() {
             guard settings.locationMode == .automatic else { return }
 
-            // Avoid a runtime crash if the usage description isn't configured.
             let hasUsage =
                 (Bundle.main.object(forInfoDictionaryKey: "NSLocationWhenInUseUsageDescription")
                 as? String)?.isEmpty == false
@@ -496,7 +493,6 @@ struct PrayerTimesData {
             let defaults = NoorSharedDefaults.shared
             defaults.set(locationName, forKey: NoorSharedKeys.lastLocationName)
 
-            // Best effort geocoding for manual city/country.
             let query = locationName
             Task {
                 do {
@@ -507,7 +503,6 @@ struct PrayerTimesData {
                         defaults.set(
                             location.coordinate.longitude, forKey: NoorSharedKeys.lastLongitude)
                     } else {
-                        // Fall back to a safe default if we have no coordinates yet.
                         if defaults.double(forKey: NoorSharedKeys.lastLatitude) == 0,
                             defaults.double(forKey: NoorSharedKeys.lastLongitude) == 0
                         {
@@ -526,6 +521,8 @@ struct PrayerTimesData {
 
                 await MainActor.run {
                     self.refreshIfNeeded(force: true)
+                    // ✅ FIX 2: Widget vernieuwen na handmatige locatie-update
+                    WidgetCenter.shared.reloadAllTimelines()
                 }
             }
         }
@@ -573,7 +570,6 @@ struct PrayerTimesData {
                 ]
             )
         }
-
     }
 
     extension PrayerTimesViewModel: CLLocationManagerDelegate {
@@ -596,7 +592,6 @@ struct PrayerTimesData {
             defaults.set(location.coordinate.longitude, forKey: NoorSharedKeys.lastLongitude)
 
             Task {
-                // Best-effort reverse geocode for a friendly label.
                 let placemark = (try? await CLGeocoder().reverseGeocodeLocation(location))?.first
                 let parts = [placemark?.locality, placemark?.country].compactMap { $0 }.filter {
                     !$0.isEmpty
@@ -613,6 +608,8 @@ struct PrayerTimesData {
                 await MainActor.run {
                     self.locationName = resolvedName
                     self.refreshIfNeeded(force: true)
+                    // ✅ FIX 3: Widget vernieuwen na automatische locatie-update
+                    WidgetCenter.shared.reloadAllTimelines()
                 }
             }
         }
@@ -650,7 +647,6 @@ final class WeatherViewModel: ObservableObject {
 
     private let settings: NoorSettings
 
-    // MARK: - Weather API (Open-Meteo)
     private struct OpenMeteoResponse: Decodable {
         struct Current: Decodable {
             let temperature_2m: Double
@@ -702,16 +698,12 @@ final class WeatherViewModel: ObservableObject {
         let lat = defaults.double(forKey: NoorSharedKeys.lastLatitude)
         let lon = defaults.double(forKey: NoorSharedKeys.lastLongitude)
 
-        guard lat != 0 || lon != 0 else {
-            return
-        }
+        guard lat != 0 || lon != 0 else { return }
 
         let urlString =
             "https://api.open-meteo.com/v1/forecast?latitude=\(lat)&longitude=\(lon)&current=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min&timezone=auto"
 
-        guard let url = URL(string: urlString) else {
-            return
-        }
+        guard let url = URL(string: urlString) else { return }
 
         Task {
             do {
@@ -734,13 +726,14 @@ final class WeatherViewModel: ObservableObject {
 
                 await MainActor.run {
                     self.snapshot = newSnapshot
+                    // ✅ FIX 4: Widget vernieuwen na nieuw weerdata
+                    WidgetCenter.shared.reloadAllTimelines()
                 }
             } catch {
                 // Keep last snapshot if fetch fails.
             }
         }
     }
-
 }
 
 struct Coordinates: Equatable {
@@ -752,8 +745,6 @@ struct Qibla {
     let direction: Double
 
     init(coordinates: Coordinates) {
-        // Bearing from current location to the Kaaba.
-        // Kaaba coords: 21.4225° N, 39.8262° E
         let kaabaLat = 21.4225
         let kaabaLon = 39.8262
 
@@ -1066,6 +1057,8 @@ struct SettingsSheet: View {
                                         withAnimation(.spring(response: 0.3)) {
                                             settings.timeFormat = format
                                         }
+                                        // ✅ FIX 5: Widget vernieuwen bij tijdformaat-wijziging
+                                        WidgetCenter.shared.reloadAllTimelines()
                                     }) {
                                         Text(format.label(appLanguage))
                                             .font(
@@ -1103,6 +1096,8 @@ struct SettingsSheet: View {
                                             settings.calculationMethod = method
                                         }
                                         prayerModel.refreshIfNeeded(force: true)
+                                        // ✅ FIX 6: Widget vernieuwen bij berekeningswijziging
+                                        WidgetCenter.shared.reloadAllTimelines()
                                     }) {
                                         Text(method.label(appLanguage))
                                             .font(
@@ -1123,8 +1118,7 @@ struct SettingsSheet: View {
                                             .overlay(
                                                 Capsule().stroke(
                                                     Color.white.opacity(isSelected ? 0 : 0.08),
-                                                    lineWidth: 1)
-                                            )
+                                                    lineWidth: 1))
                                     }
                                 }
                             }
@@ -1313,6 +1307,8 @@ struct SettingsSheet: View {
                                         withAnimation(.spring(response: 0.3)) {
                                             settings.hijriOffset = offset
                                         }
+                                        // ✅ FIX 7: Widget vernieuwen bij hijri offset-wijziging
+                                        WidgetCenter.shared.reloadAllTimelines()
                                     }) {
                                         Text(
                                             offset == 0
@@ -1349,6 +1345,8 @@ struct SettingsSheet: View {
                                         withAnimation(.spring(response: 0.3)) {
                                             settings.temperatureUnit = unit
                                         }
+                                        // ✅ FIX 8: Widget vernieuwen bij temperatuureenheid-wijziging
+                                        WidgetCenter.shared.reloadAllTimelines()
                                     }) {
                                         Text(unit.rawValue)
                                             .font(
@@ -1402,7 +1400,6 @@ struct SettingsSheet: View {
                             .background(Color.white.opacity(0.06))
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
-
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 32)
@@ -1455,7 +1452,7 @@ struct SettingsSection<Content: View>: View {
     }
 }
 
-// MARK: - NoorDialBackground (kept for compatibility)
+// MARK: - NoorDialBackground
 struct NoorDialBackground: View {
     var size: CGFloat
     var cornerRadius: CGFloat? = nil
@@ -1508,7 +1505,7 @@ struct NoorDialBackground: View {
     }
 }
 
-// MARK: - NoorClockMarkers (kept for compatibility)
+// MARK: - NoorClockMarkers
 struct NoorClockMarkers: View {
     var size: CGFloat
     var style: MarkerStyle = .standard
@@ -1589,7 +1586,7 @@ struct NoorClockMarkers: View {
     }
 }
 
-// MARK: - NoorClockHand (kept for compatibility)
+// MARK: - NoorClockHand
 struct NoorClockHand: View {
     var type: HandType
     var length: CGFloat
@@ -1630,29 +1627,23 @@ struct NoorClockHand: View {
         case .hour:
             return LinearGradient(
                 colors: [Color.white, Color.white.opacity(0.85)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+                startPoint: .top, endPoint: .bottom)
         case .minute:
             return LinearGradient(
                 colors: [
                     Color(red: 0.9, green: 0.9, blue: 1.0),
                     Color(red: 0.75, green: 0.75, blue: 0.9),
                 ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+                startPoint: .top, endPoint: .bottom)
         case .second:
             return LinearGradient(
                 colors: [Color.yellow, Color.yellow.opacity(0.8)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+                startPoint: .top, endPoint: .bottom)
         }
     }
 }
 
-// MARK: - NoorCenterCap (kept for compatibility)
+// MARK: - NoorCenterCap
 struct NoorCenterCap: View {
     var size: CGFloat
     var showRing: Bool = true
@@ -1669,7 +1660,7 @@ struct NoorCenterCap: View {
     }
 }
 
-// MARK: - NoorGlossOverlay (kept for compatibility)
+// MARK: - NoorGlossOverlay
 struct NoorGlossOverlay: View {
     var size: CGFloat
 
@@ -1686,7 +1677,7 @@ struct NoorGlossOverlay: View {
     }
 }
 
-// MARK: - NoorArcIndicator (kept for compatibility)
+// MARK: - NoorArcIndicator
 struct NoorArcIndicator: View {
     var progress: Double
     var color: Color
@@ -1703,10 +1694,9 @@ struct NoorArcIndicator: View {
 }
 
 // ============================================================
-// MARK: - NEW ANALOG CLOCK FACES (completely redesigned, live seconds)
+// MARK: - ANALOG CLOCK FACES
 // ============================================================
 
-// MARK: MinimalistAnalogFace
 struct MinimalistAnalogFace: View {
     var size: CGFloat = 169
 
@@ -1719,7 +1709,6 @@ struct MinimalistAnalogFace: View {
                     .fill(NoorDesignSystem.backgroundDeep)
                     .overlay(Circle().stroke(NoorDesignSystem.strokeSubtle, lineWidth: 1))
 
-                // Thin minute ticks
                 ForEach(0..<60) { i in
                     let isHour = i % 5 == 0
                     let tickWidth: CGFloat = isHour ? 2 : 1
@@ -1751,7 +1740,6 @@ struct MinimalistAnalogFace: View {
     }
 }
 
-// MARK: GradientRingAnalogFace
 struct GradientRingAnalogFace: View {
     var size: CGFloat = 169
 
@@ -1760,9 +1748,7 @@ struct GradientRingAnalogFace: View {
             let angles = clockAngles(from: context.date)
 
             ZStack {
-                Circle()
-                    .fill(NoorDesignSystem.backgroundDeep)
-
+                Circle().fill(NoorDesignSystem.backgroundDeep)
                 Circle()
                     .stroke(
                         LinearGradient(
@@ -1775,12 +1761,8 @@ struct GradientRingAnalogFace: View {
                         lineWidth: 8
                     )
                     .padding(6)
+                Circle().stroke(NoorDesignSystem.strokeSubtle, lineWidth: 1).padding(6)
 
-                Circle()
-                    .stroke(NoorDesignSystem.strokeSubtle, lineWidth: 1)
-                    .padding(6)
-
-                // Dot markers
                 ForEach(0..<12) { i in
                     Circle()
                         .fill(NoorDesignSystem.textPrimary.opacity(i % 3 == 0 ? 0.8 : 0.4))
@@ -1798,9 +1780,7 @@ struct GradientRingAnalogFace: View {
                 HandShape(length: size * 0.44, width: 2, color: NoorDesignSystem.accentGold)
                     .rotationEffect(.degrees(angles.second))
 
-                Circle()
-                    .fill(NoorDesignSystem.textPrimary)
-                    .frame(width: 8, height: 8)
+                Circle().fill(NoorDesignSystem.textPrimary).frame(width: 8, height: 8)
                     .overlay(Circle().stroke(NoorDesignSystem.backgroundDeep, lineWidth: 1.5))
             }
         }
@@ -1808,7 +1788,6 @@ struct GradientRingAnalogFace: View {
     }
 }
 
-// MARK: RetroNeonAnalogFace
 struct RetroNeonAnalogFace: View {
     var size: CGFloat = 169
 
@@ -1824,7 +1803,6 @@ struct RetroNeonAnalogFace: View {
                     )
                     .shadow(color: NoorDesignSystem.accentGold.opacity(0.4), radius: 8)
 
-                // Retro style numbers
                 ForEach(1...12, id: \.self) { i in
                     Text("\(i)")
                         .font(.system(size: 14, weight: .bold, design: .rounded))
@@ -1843,9 +1821,7 @@ struct RetroNeonAnalogFace: View {
                     .rotationEffect(.degrees(angles.second))
                     .shadow(color: NoorDesignSystem.accentGold.opacity(0.6), radius: 4)
 
-                Circle()
-                    .fill(NoorDesignSystem.accentGold)
-                    .frame(width: 7, height: 7)
+                Circle().fill(NoorDesignSystem.accentGold).frame(width: 7, height: 7)
                     .overlay(Circle().stroke(NoorDesignSystem.backgroundDeep, lineWidth: 1))
             }
         }
@@ -1853,7 +1829,6 @@ struct RetroNeonAnalogFace: View {
     }
 }
 
-// MARK: GeometricAnalogFace
 struct GeometricAnalogFace: View {
     var size: CGFloat = 169
 
@@ -1862,17 +1837,14 @@ struct GeometricAnalogFace: View {
             let angles = clockAngles(from: context.date)
 
             ZStack {
-                Circle()
-                    .fill(Color.black.opacity(0.85))
+                Circle().fill(Color.black.opacity(0.85))
 
-                // Hexagonal pattern
                 ForEach(0..<6) { i in
                     PolygonShape(sides: 6)
                         .stroke(Color.white.opacity(0.15), lineWidth: 1)
                         .frame(width: size - CGFloat(i) * 20, height: size - CGFloat(i) * 20)
                 }
 
-                // Triangular markers
                 ForEach(0..<12) { i in
                     TriangleMarker()
                         .fill(Color.white.opacity(0.6))
@@ -1888,16 +1860,13 @@ struct GeometricAnalogFace: View {
                 HandShape(length: size * 0.46, width: 2, color: .yellow)
                     .rotationEffect(.degrees(angles.second))
 
-                Circle()
-                    .fill(Color.yellow)
-                    .frame(width: 8, height: 8)
+                Circle().fill(Color.yellow).frame(width: 8, height: 8)
             }
         }
         .frame(width: size, height: size)
     }
 }
 
-// MARK: LuxuryGoldAnalogFace
 struct LuxuryGoldAnalogFace: View {
     var size: CGFloat = 169
 
@@ -1906,15 +1875,10 @@ struct LuxuryGoldAnalogFace: View {
             let angles = clockAngles(from: context.date)
 
             ZStack {
-                Circle()
-                    .fill(Color(white: 0.05))
+                Circle().fill(Color(white: 0.05))
                     .overlay(Circle().stroke(Color.yellow.opacity(0.5), lineWidth: 2))
+                Circle().stroke(Color.yellow.opacity(0.3), lineWidth: 1).padding(8)
 
-                Circle()
-                    .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
-                    .padding(8)
-
-                // Roman numerals
                 let romanNumerals = [
                     "XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI",
                 ]
@@ -1933,9 +1897,7 @@ struct LuxuryGoldAnalogFace: View {
                 HandShape(length: size * 0.44, width: 1.5, color: .white)
                     .rotationEffect(.degrees(angles.second))
 
-                Circle()
-                    .fill(Color.yellow)
-                    .frame(width: 8, height: 8)
+                Circle().fill(Color.yellow).frame(width: 8, height: 8)
                     .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
                     .shadow(color: .yellow.opacity(0.5), radius: 4)
             }
@@ -1944,7 +1906,6 @@ struct LuxuryGoldAnalogFace: View {
     }
 }
 
-// MARK: MidnightAnalogFace
 struct MidnightAnalogFace: View {
     var size: CGFloat = 169
 
@@ -1961,16 +1922,12 @@ struct MidnightAnalogFace: View {
                     )
                     .overlay(Circle().stroke(Color.white.opacity(0.1), lineWidth: 1))
 
-                // Subtle dot markers
                 ForEach(0..<12) { i in
-                    Circle()
-                        .fill(Color.white.opacity(0.3))
-                        .frame(width: 3, height: 3)
+                    Circle().fill(Color.white.opacity(0.3)).frame(width: 3, height: 3)
                         .offset(y: -(size / 2 - 18))
                         .rotationEffect(.degrees(Double(i) * 30))
                 }
 
-                // Moon phase indicator (approximate)
                 Circle()
                     .trim(from: 0, to: 0.5)
                     .stroke(Color.yellow.opacity(0.4), lineWidth: 2)
@@ -1985,16 +1942,13 @@ struct MidnightAnalogFace: View {
                     .rotationEffect(.degrees(angles.second))
                     .shadow(color: .yellow.opacity(0.4), radius: 3)
 
-                Circle()
-                    .fill(Color.yellow)
-                    .frame(width: 5, height: 5)
+                Circle().fill(Color.yellow).frame(width: 5, height: 5)
             }
         }
         .frame(width: size, height: size)
     }
 }
 
-// Helper: HandShape for all new analog faces
 struct HandShape: View {
     let length: CGFloat
     let width: CGFloat
@@ -2008,7 +1962,6 @@ struct HandShape: View {
     }
 }
 
-// Helper: PolygonShape
 struct PolygonShape: Shape {
     var sides: Int
     func path(in rect: CGRect) -> Path {
@@ -2027,7 +1980,6 @@ struct PolygonShape: Shape {
     }
 }
 
-// Helper: TriangleMarker
 struct TriangleMarker: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
@@ -2073,17 +2025,20 @@ struct ContentView: View {
 
     private let quranVerses: [QuranVerse] = [
         QuranVerse(
-            arabic: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا", translation: "For indeed, with hardship [will be] ease.",
+            arabic: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
+            translation: "For indeed, with hardship [will be] ease.",
             surah: "Surah Ash-Sharh", ayah: "94:5"),
         QuranVerse(
-            arabic: "وَهُوَ مَعَكُمْ أَيْنَ مَا كُنتُمْ", translation: "And He is with you wherever you are.",
+            arabic: "وَهُوَ مَعَكُمْ أَيْنَ مَا كُنتُمْ",
+            translation: "And He is with you wherever you are.",
             surah: "Surah Al-Hadid", ayah: "57:4"),
         QuranVerse(
             arabic: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ",
             translation: "Verily, in the remembrance of Allah do hearts find rest.",
             surah: "Surah Ar-Ra'd", ayah: "13:28"),
         QuranVerse(
-            arabic: "إِنَّ اللَّهَ مَعَ الصَّابِرِينَ", translation: "Indeed, Allah is with the patient.",
+            arabic: "إِنَّ اللَّهَ مَعَ الصَّابِرِينَ",
+            translation: "Indeed, Allah is with the patient.",
             surah: "Surah Al-Baqarah", ayah: "2:153"),
     ]
 
@@ -2168,14 +2123,11 @@ struct ContentView: View {
                     HStack(spacing: 10) {
                         ForEach(filters, id: \.self) { item in
                             let isSelected = selectedFilter == item
-
                             Button {
                                 guard item != selectedFilter else { return }
-
                                 withAnimation(.easeInOut(duration: 0.25)) {
                                     selectedFilter = item
                                 }
-
                                 DispatchQueue.main.async {
                                     proxy.scrollTo(item, anchor: .center)
                                 }
@@ -2251,13 +2203,10 @@ struct ContentView: View {
                     .overlay(alignment: .bottom) {
                         LinearGradient(
                             colors: [Color.white.opacity(0.16), Color.clear],
-                            startPoint: .bottom,
-                            endPoint: .top
+                            startPoint: .bottom, endPoint: .top
                         )
                         .frame(height: 18)
-                        .clipShape(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
                     .shadow(color: .black.opacity(0.22), radius: 10, x: 0, y: 6)
                     .transition(.opacity)
@@ -2292,7 +2241,6 @@ struct ContentView: View {
             weatherModel: weatherModel
         )
     }
-
 }
 
 private struct ContentScrollOffsetKey: PreferenceKey {
@@ -2317,7 +2265,6 @@ private struct FilterContentRootView: View {
                 .foregroundStyle(.white.opacity(0.8))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
-
             content
         }
         .padding(.horizontal, 20)
@@ -2329,11 +2276,7 @@ private struct FilterContentRootView: View {
         case "ALL":
             AnyView(
                 AllFilterContentView(
-                    appLang: appLang,
-                    quranVerses: quranVerses,
-                    weatherModel: weatherModel
-                )
-            )
+                    appLang: appLang, quranVerses: quranVerses, weatherModel: weatherModel))
         case "ANALOG":
             AnyView(AnalogGridContentView())
         case "DIGITAL":
@@ -2361,44 +2304,37 @@ private struct AllFilterContentView: View {
         VStack(alignment: .leading, spacing: 24) {
             Text("Analog")
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .padding(.top, 4)
+                .foregroundStyle(.white).padding(.top, 4)
             AnalogGridContentView()
 
             Text(AppStrings.t("filter_digital", appLang))
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .padding(.top, 4)
+                .foregroundStyle(.white).padding(.top, 4)
             DigitalAllSectionView(appLang: appLang)
 
             Text(AppStrings.t("filter_quran", appLang))
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .padding(.top, 4)
+                .foregroundStyle(.white).padding(.top, 4)
             QuranVersesContentView(quranVerses: quranVerses)
 
             Text(AppStrings.t("filter_dots", appLang))
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .padding(.top, 4)
+                .foregroundStyle(.white).padding(.top, 4)
             DotsFilterContentView(appLang: appLang)
 
             Text(AppStrings.t("filter_date", appLang))
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .padding(.top, 4)
+                .foregroundStyle(.white).padding(.top, 4)
             DateFilterContentView(appLang: appLang)
 
             Text(AppStrings.t("filter_prayer", appLang))
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .padding(.top, 4)
+                .foregroundStyle(.white).padding(.top, 4)
             PrayerFilterContentView(appLang: appLang)
 
             Text(AppStrings.t("filter_weather", appLang))
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .padding(.top, 4)
+                .foregroundStyle(.white).padding(.top, 4)
             WeatherFilterContentView(appLang: appLang, weatherModel: weatherModel)
         }
     }
@@ -2407,7 +2343,6 @@ private struct AllFilterContentView: View {
 private struct AnalogGridContentView: View {
     var body: some View {
         let analogClockSize: CGFloat = 130
-
         VStack(spacing: 16) {
             HStack(spacing: 16) {
                 SmallWidgetCard(title: "Minimalist") { MinimalistAnalogFace(size: analogClockSize) }
@@ -2431,7 +2366,6 @@ private struct AnalogGridContentView: View {
 
 private struct DigitalAllSectionView: View {
     let appLang: AppLanguage
-
     var body: some View {
         VStack(spacing: 20) {
             Card(title: AppStrings.t("card_luminous_digital", appLang)) {
@@ -2459,7 +2393,6 @@ private struct DigitalAllSectionView: View {
 
 private struct DigitalFilterContentView: View {
     let appLang: AppLanguage
-
     var body: some View {
         VStack(spacing: 20) {
             Card(title: AppStrings.t("card_luminous_digital", appLang)) {
@@ -2475,12 +2408,9 @@ private struct DigitalFilterContentView: View {
             Card(title: AppStrings.t("card_dual_line_time", appLang)) {
                 DualLineTimeFace().frame(height: 150)
             }
-
             Text(AppStrings.t("celestial_calendars", appLang))
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .padding(.top, 4)
-
+                .foregroundStyle(.white).padding(.top, 4)
             Card(title: AppStrings.t("card_gregorian", appLang)) {
                 GregorianCompactCalendarCard().frame(height: 150)
             }
@@ -2493,19 +2423,15 @@ private struct DigitalFilterContentView: View {
 
 private struct QuranVersesContentView: View {
     let quranVerses: [QuranVerse]
-
     var body: some View {
         VStack(spacing: 20) {
-            ForEach(quranVerses) { verse in
-                QuranVerseCard(verse: verse)
-            }
+            ForEach(quranVerses) { verse in QuranVerseCard(verse: verse) }
         }
     }
 }
 
 private struct DotsFilterContentView: View {
     let appLang: AppLanguage
-
     var body: some View {
         VStack(spacing: 20) {
             Card(title: AppStrings.t("card_week_pulse", appLang)) { WeekDotsFace() }
@@ -2518,7 +2444,6 @@ private struct DotsFilterContentView: View {
 
 private struct DateFilterContentView: View {
     let appLang: AppLanguage
-
     var body: some View {
         VStack(spacing: 20) {
             Card(title: AppStrings.t("card_today_date", appLang)) { TodayDateFace() }
@@ -2528,7 +2453,6 @@ private struct DateFilterContentView: View {
             }
             Card(title: AppStrings.t("card_month_grid", appLang)) { MonthGridFace() }
             Card(title: AppStrings.t("card_islamic_calendar", appLang)) { IslamicDateFace() }
-
             Card(title: "Thuluth Small") { ThuluthWidgetPreview(family: .small) }
             Card(title: "Thuluth Medium") { ThuluthWidgetPreview(family: .medium) }
             Card(title: "Thuluth Large") { ThuluthWidgetPreview(family: .large) }
@@ -2538,29 +2462,20 @@ private struct DateFilterContentView: View {
 
 private struct PrayerFilterContentView: View {
     let appLang: AppLanguage
-
     var body: some View {
         VStack(spacing: 20) {
-            Card(title: AppStrings.t("card_prayer_times_today", appLang)) {
-                PrayerTimesFace()
-            }
+            Card(title: AppStrings.t("card_prayer_times_today", appLang)) { PrayerTimesFace() }
             SmallWidgetCard(title: AppStrings.t("card_small_prayer_times_today", appLang)) {
                 SmallPrayerTimesFace()
             }
             .frame(width: 158)
             Card(title: AppStrings.t("card_next_prayer", appLang)) { NextPrayerFace() }
             Card(title: AppStrings.t("card_timeline", appLang)) { PrayerTimelineFace() }
-
             HStack(alignment: .top, spacing: 12) {
-                Card(title: AppStrings.t("card_prayer_progress", appLang)) {
-                    PrayerProgressFace()
-                }
-                .frame(maxWidth: .infinity)
-
-                Card(title: AppStrings.t("card_qibla_compass", appLang)) {
-                    QiblaFacePreview()
-                }
-                .frame(maxWidth: .infinity)
+                Card(title: AppStrings.t("card_prayer_progress", appLang)) { PrayerProgressFace() }
+                    .frame(maxWidth: .infinity)
+                Card(title: AppStrings.t("card_qibla_compass", appLang)) { QiblaFacePreview() }
+                    .frame(maxWidth: .infinity)
             }
         }
     }
@@ -2569,26 +2484,20 @@ private struct PrayerFilterContentView: View {
 private struct WeatherFilterContentView: View {
     let appLang: AppLanguage
     @ObservedObject var weatherModel: WeatherViewModel
-
     var body: some View {
         VStack(spacing: 18) {
             Card(title: AppStrings.t("card_weather_now", appLang)) {
                 WeatherDetailFace(model: weatherModel)
             }
             HStack(spacing: 12) {
-                Card(title: "Current Weather") {
-                    WeatherSimpleFace(model: weatherModel)
-                }
-                .frame(maxWidth: .infinity)
-
-                Card(title: "Compact Weather") {
-                    WeatherCompactFace(model: weatherModel)
-                }
-                .frame(maxWidth: .infinity)
+                Card(title: "Current Weather") { WeatherSimpleFace(model: weatherModel) }.frame(
+                    maxWidth: .infinity)
+                Card(title: "Compact Weather") { WeatherCompactFace(model: weatherModel) }.frame(
+                    maxWidth: .infinity)
             }
             Card(title: "Thuluth Weather") {
-                WeatherThuluthFace(model: weatherModel)
-                    .aspectRatio(310.0 / 146.0, contentMode: .fit)
+                WeatherThuluthFace(model: weatherModel).aspectRatio(
+                    310.0 / 146.0, contentMode: .fit)
             }
         }
     }
@@ -2622,8 +2531,8 @@ struct Card<Content: View>: View {
                 .padding(16)
                 .background(Color.white.opacity(0.06))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(
+                        Color.white.opacity(0.08), lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .shadow(color: .black.opacity(0.6), radius: 24, x: 0, y: 12)
@@ -2634,7 +2543,6 @@ struct Card<Content: View>: View {
     }
 }
 
-// MARK: - SmallWidgetCard (square small widget style, 2-column grid)
 struct SmallWidgetCard<Content: View>: View {
     let title: String
     let content: Content
@@ -2649,8 +2557,8 @@ struct SmallWidgetCard<Content: View>: View {
                 .aspectRatio(1, contentMode: .fit)
                 .background(Color.white.opacity(0.06))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(
+                        Color.white.opacity(0.08), lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .shadow(color: .black.opacity(0.5), radius: 16, x: 0, y: 8)
@@ -2662,7 +2570,7 @@ struct SmallWidgetCard<Content: View>: View {
     }
 }
 
-// MARK: - Thuluth Widget Previews (unchanged)
+// MARK: - Thuluth Widget Previews
 private enum ThuluthWidgetColors {
     static let background = Color.black
     static let yellow = Color.yellow
@@ -2671,33 +2579,24 @@ private enum ThuluthWidgetColors {
 }
 
 enum WidgetPreviewFamily {
-    case small
-    case medium
-    case large
-
+    case small, medium, large
     var aspectRatio: CGFloat {
         switch self {
-        case .small, .large:
-            return 1
-        case .medium:
-            return 364.0 / 170.0
+        case .small, .large: return 1
+        case .medium: return 364.0 / 170.0
         }
     }
 }
 
 struct ThuluthWidgetPreview: View {
     let family: WidgetPreviewFamily
-
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { context in
             WidgetPreviewContainer(family: family) {
                 switch family {
-                case .small:
-                    ThuluthSmallWidgetFace(date: context.date)
-                case .medium:
-                    ThuluthMediumWidgetFace(date: context.date)
-                case .large:
-                    ThuluthLargeWidgetFace(date: context.date)
+                case .small: ThuluthSmallWidgetFace(date: context.date)
+                case .medium: ThuluthMediumWidgetFace(date: context.date)
+                case .large: ThuluthLargeWidgetFace(date: context.date)
                 }
             }
         }
@@ -2707,28 +2606,22 @@ struct ThuluthWidgetPreview: View {
 struct WidgetPreviewContainer<Content: View>: View {
     let family: WidgetPreviewFamily
     let content: Content
-
     init(family: WidgetPreviewFamily, @ViewBuilder content: () -> Content) {
         self.family = family
         self.content = content()
     }
-
     var body: some View {
-        ZStack {
-            content
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .aspectRatio(family.aspectRatio, contentMode: .fit)
+        ZStack { content }
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .aspectRatio(family.aspectRatio, contentMode: .fit)
     }
 }
 
 struct ThuluthSmallWidgetFace: View {
     let date: Date
-
     var body: some View {
         let hijri = Calendar(identifier: .islamicUmmAlQura)
         let hComps = hijri.dateComponents([.day, .month, .year], from: date)
-
         return VStack(spacing: 6) {
             Text(dayNumber(date))
                 .font(.custom("DecoType Thuluth", size: 56))
@@ -2740,31 +2633,26 @@ struct ThuluthSmallWidgetFace: View {
             Text(arabicDigits(hComps.day ?? 0) + " " + hijriMonthName(date))
                 .font(.custom("DecoType Thuluth", size: 14))
                 .foregroundStyle(ThuluthWidgetColors.textSecondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
+                .lineLimit(1).minimumScaleFactor(0.6)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(12)
     }
 }
 
 struct ThuluthMediumWidgetFace: View {
     let date: Date
-
     var body: some View {
         let comps = Calendar.current.dateComponents([.hour, .minute], from: date)
         let hour = comps.hour ?? 0
         let minute = comps.minute ?? 0
-
         return VStack(spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(String(format: "%02d", hour))
                     .font(.custom("DecoType Thuluth", size: 48))
                     .foregroundStyle(ThuluthWidgetColors.textPrimary)
-                Text(":")
-                    .font(.system(size: 40, weight: .thin))
-                    .foregroundStyle(ThuluthWidgetColors.yellow)
-                    .offset(y: -2)
+                Text(":").font(.system(size: 40, weight: .thin)).foregroundStyle(
+                    ThuluthWidgetColors.yellow
+                ).offset(y: -2)
                 Text(String(format: "%02d", minute))
                     .font(.custom("DecoType Thuluth", size: 48))
                     .foregroundStyle(ThuluthWidgetColors.yellow)
@@ -2772,8 +2660,7 @@ struct ThuluthMediumWidgetFace: View {
             Text(weekdayNameFull(date) + " · " + dayNumber(date) + " " + monthName(date))
                 .font(.custom("DecoType Thuluth", size: 18))
                 .foregroundStyle(ThuluthWidgetColors.textSecondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .lineLimit(1).minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
@@ -2781,56 +2668,45 @@ struct ThuluthMediumWidgetFace: View {
 
 struct ThuluthLargeWidgetFace: View {
     let date: Date
-
     var body: some View {
         let hijri = Calendar(identifier: .islamicUmmAlQura)
         let hComps = hijri.dateComponents([.day, .month, .year], from: date)
         let dayOfYear = Double(hijri.ordinality(of: .day, in: .year, for: date) ?? 1)
         let totalDays = Double(hijri.range(of: .day, in: .year, for: date)?.count ?? 354)
         let progress = max(0.0, min(1.0, dayOfYear / totalDays))
-
         return ZStack {
-            Circle()
-                .stroke(ThuluthWidgetColors.textPrimary.opacity(0.08), lineWidth: 12)
-                .padding(8)
-
-            Circle()
-                .trim(from: 0, to: progress)
+            Circle().stroke(ThuluthWidgetColors.textPrimary.opacity(0.08), lineWidth: 12).padding(8)
+            Circle().trim(from: 0, to: progress)
                 .stroke(
                     AngularGradient(
                         gradient: Gradient(colors: [
                             ThuluthWidgetColors.yellow.opacity(0.3), ThuluthWidgetColors.yellow,
                             ThuluthWidgetColors.yellow.opacity(0.3),
                         ]),
-                        center: .center
-                    ),
+                        center: .center),
                     style: StrokeStyle(lineWidth: 12, lineCap: .round)
                 )
-                .rotationEffect(.degrees(-90))
-                .padding(8)
-
+                .rotationEffect(.degrees(-90)).padding(8)
             VStack(spacing: 4) {
                 Text(arabicDigits(hComps.day ?? 0))
-                    .font(.custom("DecoType Thuluth", size: 56))
-                    .foregroundStyle(ThuluthWidgetColors.yellow)
+                    .font(.custom("DecoType Thuluth", size: 56)).foregroundStyle(
+                        ThuluthWidgetColors.yellow)
                 Text(hijriMonthName(date))
-                    .font(.custom("DecoType Thuluth", size: 22))
-                    .foregroundStyle(ThuluthWidgetColors.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .padding(.horizontal, 24)
+                    .font(.custom("DecoType Thuluth", size: 22)).foregroundStyle(
+                        ThuluthWidgetColors.textPrimary
+                    )
+                    .lineLimit(1).minimumScaleFactor(0.7).padding(.horizontal, 24)
                 Text(arabicDigits(hComps.year ?? 0) + " هـ")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(ThuluthWidgetColors.textSecondary)
+                    .font(.system(size: 14, weight: .medium, design: .rounded)).foregroundStyle(
+                        ThuluthWidgetColors.textSecondary)
             }
             .padding(8)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(16)
     }
 }
 
-// MARK: - Dot-based Time Faces (unchanged)
+// MARK: - Dot-based Time Faces
 struct WeekDotsFace: View {
     @State private var now: Date = .now
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -2843,30 +2719,25 @@ struct WeekDotsFace: View {
 
         VStack(spacing: 16) {
             Text(AppStrings.t("label_week_pulse", appLanguage))
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
-
+                .font(.system(size: 14, weight: .bold, design: .rounded)).foregroundStyle(
+                    .white.opacity(0.6))
             HStack(spacing: 12) {
                 ForEach(1...7, id: \.self) { day in
                     let isToday = day == adjustedDay
-                    Circle()
-                        .fill(isToday ? Color.yellow : Color.white.opacity(0.15))
+                    Circle().fill(isToday ? Color.yellow : Color.white.opacity(0.15))
                         .frame(width: isToday ? 18 : 12, height: isToday ? 18 : 12)
                         .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(isToday ? 0.4 : 0.1), lineWidth: 2)
+                            Circle().stroke(Color.white.opacity(isToday ? 0.4 : 0.1), lineWidth: 2)
                                 .scaleEffect(isToday ? 1.4 : 1.0)
                         )
                         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isToday)
                 }
             }
-
             Text(weekdayNameFull(now))
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white)
+                .font(.system(size: 16, weight: .semibold, design: .rounded)).foregroundStyle(
+                    .white)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .frame(maxWidth: .infinity).padding(.vertical, 24)
         .onReceive(timer) { now = $0 }
     }
 }
@@ -2880,15 +2751,13 @@ struct MonthDotsFace: View {
         let calendar = Calendar.current
         let dayOfMonth = calendar.component(.day, from: now)
         let daysInMonth = calendar.range(of: .day, in: .month, for: now)?.count ?? 30
-
         let columns = 10
         let rows = Int(ceil(Double(daysInMonth) / Double(columns)))
 
         VStack(spacing: 16) {
             Text(AppStrings.t("label_month_progress", appLanguage))
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
-
+                .font(.system(size: 14, weight: .bold, design: .rounded)).foregroundStyle(
+                    .white.opacity(0.6))
             VStack(spacing: 6) {
                 ForEach(0..<rows, id: \.self) { row in
                     HStack(spacing: 6) {
@@ -2896,26 +2765,23 @@ struct MonthDotsFace: View {
                             let dayNum = row * columns + col + 1
                             if dayNum <= daysInMonth {
                                 let isPassed = dayNum <= dayOfMonth
-                                Circle()
-                                    .fill(isPassed ? Color.yellow : Color.white.opacity(0.15))
+                                Circle().fill(isPassed ? Color.yellow : Color.white.opacity(0.15))
                                     .frame(width: isPassed ? 8 : 6, height: isPassed ? 8 : 6)
                             }
                         }
                     }
                 }
             }
-
             HStack {
                 Text(AppStrings.t("label_day", appLanguage) + " \(dayOfMonth)")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded)).foregroundStyle(
+                        .white)
                 Text(AppStrings.t("label_of", appLanguage) + " \(daysInMonth)")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .font(.system(size: 14, weight: .medium, design: .rounded)).foregroundStyle(
+                        .white.opacity(0.6))
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .frame(maxWidth: .infinity).padding(.vertical, 24)
         .onReceive(timer) { now = $0 }
     }
 }
@@ -2934,15 +2800,13 @@ struct YearDotsFace: View {
 
         VStack(spacing: 16) {
             Text(AppStrings.t("label_year_journey", appLanguage))
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
-
+                .font(.system(size: 14, weight: .bold, design: .rounded)).foregroundStyle(
+                    .white.opacity(0.6))
             HStack(spacing: 10) {
                 ForEach(1...12, id: \.self) { month in
                     let currentMonth = calendar.component(.month, from: now)
                     let isPassed = month < currentMonth
                     let isCurrent = month == currentMonth
-
                     Circle()
                         .fill(
                             isCurrent
@@ -2951,27 +2815,22 @@ struct YearDotsFace: View {
                         )
                         .frame(width: isCurrent ? 16 : 10, height: isCurrent ? 16 : 10)
                         .overlay(
-                            Circle()
-                                .stroke(Color.yellow.opacity(isCurrent ? 0.6 : 0), lineWidth: 2)
-                                .scaleEffect(isCurrent ? 1.5 : 1.0)
-                        )
+                            Circle().stroke(Color.yellow.opacity(isCurrent ? 0.6 : 0), lineWidth: 2)
+                                .scaleEffect(isCurrent ? 1.5 : 1.0))
                 }
             }
-
             VStack(spacing: 4) {
-                Text("\(year)")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                Text("\(year)").font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 Text(
                     AppStrings.t("label_day", appLanguage) + " \(dayOfYear) "
                         + AppStrings.t("label_of", appLanguage) + " \(totalDays)"
                 )
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
+                .font(.system(size: 14, weight: .medium, design: .rounded)).foregroundStyle(
+                    .white.opacity(0.6))
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .frame(maxWidth: .infinity).padding(.vertical, 24)
         .onReceive(timer) { now = $0 }
     }
 }
@@ -2994,29 +2853,23 @@ struct TripleOrbitFace: View {
         let yearProgress = dayOfYear / totalDays
 
         ZStack {
-            Circle()
-                .fill(.black.opacity(0.9))
-                .overlay(Circle().stroke(Color.white.opacity(0.08), lineWidth: 1))
-
+            Circle().fill(.black.opacity(0.9)).overlay(
+                Circle().stroke(Color.white.opacity(0.08), lineWidth: 1))
             Circle().stroke(Color.white.opacity(0.1), lineWidth: 2).padding(20)
             Circle().fill(Color.white.opacity(0.8)).frame(width: 8, height: 8)
                 .offset(y: -(240 / 2 - 20 - 4)).rotationEffect(.degrees(yearProgress * 360 - 90))
-
             Circle().stroke(Color.white.opacity(0.15), lineWidth: 2).padding(50)
             Circle().fill(Color.white).frame(width: 10, height: 10)
                 .offset(y: -(240 / 2 - 50 - 5)).rotationEffect(.degrees(monthProgress * 360 - 90))
-
             Circle().stroke(Color.yellow.opacity(0.3), lineWidth: 2).padding(80)
             Circle().fill(Color.yellow).frame(width: 12, height: 12)
                 .offset(y: -(240 / 2 - 80 - 6)).rotationEffect(.degrees(weekProgress * 360 - 90))
                 .shadow(color: .yellow.opacity(0.6), radius: 8)
-
             VStack(spacing: 4) {
                 Text(AppStrings.t("label_orbits", appLanguage))
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.5))
-                Text("W • M • Y")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded)).foregroundStyle(
+                        .white.opacity(0.5))
+                Text("W • M • Y").font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(.yellow)
             }
         }
@@ -3025,7 +2878,7 @@ struct TripleOrbitFace: View {
     }
 }
 
-// MARK: - Digital Faces (unchanged)
+// MARK: - Digital Faces
 struct DigitalBoldFace: View {
     @State private var now: Date = .now
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -3036,16 +2889,16 @@ struct DigitalBoldFace: View {
             let hour = comps.hour ?? 0
             let minute = comps.minute ?? 0
             VStack(alignment: .leading, spacing: -2) {
-                Text(String(format: "%02d", hour))
-                    .font(.system(size: 64, weight: .heavy, design: .rounded))
-                    .foregroundStyle(Color.yellow)
-                Text(String(format: "%02d", minute))
-                    .font(.system(size: 56, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                Text(String(format: "%02d", hour)).font(
+                    .system(size: 64, weight: .heavy, design: .rounded)
+                ).foregroundStyle(Color.yellow)
+                Text(String(format: "%02d", minute)).font(
+                    .system(size: 56, weight: .bold, design: .rounded)
+                ).foregroundStyle(.white)
             }
             Text(AppStrings.t("label_luminous_digital", appLanguage))
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
+                .font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(
+                    .white.opacity(0.6))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .onReceive(timer) { now = $0 }
@@ -3056,9 +2909,9 @@ struct DayDateGridCard: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(monthName(Date()).uppercased())
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.7))
+                Text(monthName(Date()).uppercased()).font(
+                    .system(size: 14, weight: .medium, design: .rounded)
+                ).foregroundStyle(.white.opacity(0.7))
                 CapsuleLabel(
                     text: weekdayName(Date()).uppercased(), color: .white.opacity(0.10),
                     textColor: .white)
@@ -3079,13 +2932,10 @@ struct CapsuleLabel: View {
     let color: Color
     let textColor: Color
     var body: some View {
-        Text(text)
-            .font(.system(size: 14, weight: .bold, design: .rounded))
-            .foregroundStyle(textColor)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(color)
-            .clipShape(Capsule())
+        Text(text).font(.system(size: 14, weight: .bold, design: .rounded)).foregroundStyle(
+            textColor
+        )
+        .padding(.horizontal, 14).padding(.vertical, 8).background(color).clipShape(Capsule())
     }
 }
 
@@ -3104,14 +2954,12 @@ struct QuranTickerCard: View {
                     }
                 })
             Text("سبحان الله وبحمده، سبحان الله العظيم")
-                .font(.custom("DecoType Thuluth", size: 32))
-                .foregroundStyle(.yellow)
+                .font(.custom("DecoType Thuluth", size: 32)).foregroundStyle(.yellow)
                 .offset(x: phase)
                 .animation(.linear(duration: 8).repeatForever(autoreverses: false), value: phase)
                 .onAppear { phase = -40 }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 150)
+        .frame(maxWidth: .infinity).frame(height: 150)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
@@ -3126,8 +2974,7 @@ struct DigitalMinimalFace: View {
             formatter.locale = Locale.current
         }()
         return Text(formatter.string(from: now))
-            .font(.system(size: 36, weight: .bold, design: .monospaced))
-            .foregroundStyle(.white)
+            .font(.system(size: 36, weight: .bold, design: .monospaced)).foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
             .onReceive(timer) { now = $0 }
     }
@@ -3143,14 +2990,13 @@ struct DualLineTimeFace: View {
         let minute = comps.minute ?? 0
         return VStack(alignment: .leading, spacing: 8) {
             Text(String(format: "%02d:%02d", hour, minute))
-                .font(.system(size: 54, weight: .heavy, design: .rounded))
-                .foregroundStyle(.white)
+                .font(.system(size: 54, weight: .heavy, design: .rounded)).foregroundStyle(.white)
                 .overlay(alignment: .bottomLeading) {
                     Rectangle().fill(Color.yellow).frame(height: 6).offset(y: 10)
                 }
             Text(AppStrings.t("label_quran_orbital", appLanguage))
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
+                .font(.system(size: 12, weight: .semibold, design: .rounded)).foregroundStyle(
+                    .white.opacity(0.6))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onReceive(timer) { now = $0 }
@@ -3176,16 +3022,12 @@ struct RoundedRectInfo: View {
     var textColor: Color = .black
     var body: some View {
         VStack(spacing: 6) {
-            Text(title)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
+            Text(title).font(.system(size: 12, weight: .semibold, design: .rounded))
                 .foregroundStyle(textColor == .black ? .black.opacity(0.7) : textColor.opacity(0.7))
-            Text(value)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundStyle(textColor)
+            Text(value).font(.system(size: 28, weight: .bold, design: .rounded)).foregroundStyle(
+                textColor)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(accent)
+        .frame(maxWidth: .infinity).padding(.vertical, 16).background(accent)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
@@ -3208,31 +3050,26 @@ struct HijriCompactCalendarCard: View {
     }
 }
 
-// MARK: - DATE Widgets (unchanged)
+// MARK: - DATE Widgets
 struct TodayDateFace: View {
     @State private var now: Date = .now
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-
     var body: some View {
         let calendar = Calendar.current
         let day = calendar.component(.day, from: now)
-
         VStack(spacing: 16) {
-            Text(weekdayNameFull(now).uppercased())
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
-            Text("\(day)")
-                .font(.system(size: 88, weight: .heavy, design: .rounded))
+            Text(weekdayNameFull(now).uppercased()).font(
+                .system(size: 14, weight: .bold, design: .rounded)
+            ).foregroundStyle(.white.opacity(0.6))
+            Text("\(day)").font(.system(size: 88, weight: .heavy, design: .rounded))
                 .foregroundStyle(.yellow)
-            Text(monthName(now).uppercased())
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-            Text(yearNumber(now))
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+            Text(monthName(now).uppercased()).font(
+                .system(size: 18, weight: .bold, design: .rounded)
+            ).foregroundStyle(.white)
+            Text(yearNumber(now)).font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.6))
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .frame(maxWidth: .infinity).padding(.vertical, 24)
         .onReceive(timer) { now = $0 }
     }
 }
@@ -3240,50 +3077,41 @@ struct TodayDateFace: View {
 struct DualCalendarFace: View {
     @State private var now: Date = .now
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-
     var body: some View {
         HStack(spacing: 16) {
             VStack(spacing: 8) {
-                Text("GREGORIAN")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                Text("GREGORIAN").font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.5))
-                Text(dayNumber(now))
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                Text(dayNumber(now)).font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundStyle(.yellow)
-                Text(shortMonth(now).uppercased())
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
-                Text(yearNumber(now))
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                Text(shortMonth(now).uppercased()).font(
+                    .system(size: 14, weight: .semibold, design: .rounded)
+                ).foregroundStyle(.white)
+                Text(yearNumber(now)).font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.6))
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .background(Color.white.opacity(0.04))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .frame(maxWidth: .infinity).padding(.vertical, 20)
+            .background(Color.white.opacity(0.04)).clipShape(
+                RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             VStack(spacing: 8) {
-                Text("HIJRI")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                Text("HIJRI").font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.5))
                 let hijri = Calendar(identifier: .islamicUmmAlQura)
                 let comps = hijri.dateComponents([.day, .month, .year], from: now)
-                Text(arabicDigits(comps.day ?? 0))
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                Text(hijriMonthName(now))
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Text(arabicDigits(comps.year ?? 0))
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
+                Text(arabicDigits(comps.day ?? 0)).font(
+                    .system(size: 48, weight: .bold, design: .rounded)
+                ).foregroundStyle(.white)
+                Text(hijriMonthName(now)).font(
+                    .system(size: 14, weight: .semibold, design: .rounded)
+                ).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                Text(arabicDigits(comps.year ?? 0)).font(
+                    .system(size: 12, weight: .medium, design: .rounded)
+                ).foregroundStyle(.white.opacity(0.6))
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .background(Color.white.opacity(0.04))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .frame(maxWidth: .infinity).padding(.vertical, 20)
+            .background(Color.white.opacity(0.04)).clipShape(
+                RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .onReceive(timer) { now = $0 }
     }
@@ -3292,22 +3120,19 @@ struct DualCalendarFace: View {
 struct MonthGridFace: View {
     @State private var now: Date = .now
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-
     var body: some View {
         let calendar = Calendar.current
         let currentDay = calendar.component(.day, from: now)
         let daysInMonth = calendar.range(of: .day, in: .month, for: now)?.count ?? 30
         let columns = 7
         let rows = Int(ceil(Double(daysInMonth) / Double(columns)))
-
         VStack(spacing: 12) {
             HStack {
-                Text(monthName(now).uppercased())
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                Text(monthName(now).uppercased()).font(
+                    .system(size: 14, weight: .bold, design: .rounded)
+                ).foregroundStyle(.white)
                 Spacer()
-                Text(yearNumber(now))
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                Text(yearNumber(now)).font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.6))
             }
             VStack(spacing: 4) {
@@ -3343,32 +3168,27 @@ struct MonthGridFace: View {
 struct IslamicDateFace: View {
     @State private var now: Date = .now
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-
     var body: some View {
         let hijri = Calendar(identifier: .islamicUmmAlQura)
         let comps = hijri.dateComponents([.day, .month, .year, .weekday], from: now)
-
         VStack(spacing: 16) {
-            Text("التقويم الهجري")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
+            Text("التقويم الهجري").font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.6))
-            Text(arabicDigits(comps.day ?? 0))
-                .font(.system(size: 72, weight: .heavy, design: .rounded))
-                .foregroundStyle(.yellow)
-            Text(hijriMonthName(now))
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+            Text(arabicDigits(comps.day ?? 0)).font(
+                .system(size: 72, weight: .heavy, design: .rounded)
+            ).foregroundStyle(.yellow)
+            Text(hijriMonthName(now)).font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            Text(arabicDigits(comps.year ?? 0) + " هـ")
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
+            Text(arabicDigits(comps.year ?? 0) + " هـ").font(
+                .system(size: 16, weight: .semibold, design: .rounded)
+            ).foregroundStyle(.white.opacity(0.6))
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .frame(maxWidth: .infinity).padding(.vertical, 24)
         .onReceive(timer) { now = $0 }
     }
 }
 
-// MARK: - GEBEDSTIJDEN Widgets (unchanged)
+// MARK: - GEBEDSTIJDEN Widgets
 struct PrayerTimesFace: View {
     @EnvironmentObject private var prayerModel: PrayerTimesViewModel
     @Environment(\.appLanguage) private var appLanguage
@@ -3376,7 +3196,6 @@ struct PrayerTimesFace: View {
     private var locale: Locale {
         appLanguage == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
     }
-
     private var timeFormat: NoorTimeFormatSetting {
         NoorTimeFormatSetting.fromStorage(
             NoorSharedDefaults.shared.string(forKey: NoorSharedKeys.timeFormat))
@@ -3385,48 +3204,42 @@ struct PrayerTimesFace: View {
     var body: some View {
         let data = prayerModel.data
         let date = data?.date ?? Date()
-
         VStack(spacing: 12) {
             HStack {
-                Text(AppStrings.t("label_prayer_times", appLanguage))
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
+                Text(AppStrings.t("label_prayer_times", appLanguage)).font(
+                    .system(size: 12, weight: .bold, design: .rounded)
+                ).foregroundStyle(.white.opacity(0.6))
                 Spacer()
-                Text(date, format: Date.FormatStyle().day().month(.abbreviated))
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
+                Text(date, format: Date.FormatStyle().day().month(.abbreviated)).font(
+                    .system(size: 12, weight: .semibold, design: .rounded)
+                ).foregroundStyle(.white.opacity(0.6))
             }
-
             if let data {
                 VStack(spacing: 8) {
                     ForEach(data.times) { prayer in
                         HStack {
-                            Text(prayer.name.arabic)
-                                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.yellow)
-                                .frame(width: 60, alignment: .trailing)
-                            Text(prayer.name.english.uppercased())
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                                .foregroundStyle(.white.opacity(0.7))
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text(prayer.name.arabic).font(
+                                .system(size: 16, weight: .semibold, design: .rounded)
+                            ).foregroundStyle(.yellow).frame(width: 60, alignment: .trailing)
+                            Text(prayer.name.english.uppercased()).font(
+                                .system(size: 12, weight: .bold, design: .rounded)
+                            ).foregroundStyle(.white.opacity(0.7)).frame(
+                                maxWidth: .infinity, alignment: .leading)
                             Text(
                                 NoorPrayerTimeFormatter.format(
                                     prayer.time, timeFormat: timeFormat, locale: locale)
-                            )
-                            .font(.system(size: 18, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
+                            ).font(.system(size: 18, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.white)
                         }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8).padding(.horizontal, 12)
                         .background(Color.white.opacity(0.04))
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                 }
             } else {
-                Text(AppStrings.t("location_needed", appLanguage))
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .padding(.vertical, 16)
+                Text(AppStrings.t("location_needed", appLanguage)).font(
+                    .system(size: 13, weight: .semibold, design: .rounded)
+                ).foregroundStyle(.white.opacity(0.6)).padding(.vertical, 16)
             }
         }
     }
@@ -3439,7 +3252,6 @@ struct SmallPrayerTimesFace: View {
     private var locale: Locale {
         appLanguage == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
     }
-
     private var timeFormat: NoorTimeFormatSetting {
         NoorTimeFormatSetting.fromStorage(
             NoorSharedDefaults.shared.string(forKey: NoorSharedKeys.timeFormat))
@@ -3448,22 +3260,16 @@ struct SmallPrayerTimesFace: View {
     var body: some View {
         let data = prayerModel.data
         let date = data?.date ?? Date()
-
         VStack(spacing: 4) {
             HStack {
-                Text(AppStrings.t("label_prayer_times", appLanguage))
-                    .font(.system(size: 8, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                Text(AppStrings.t("label_prayer_times", appLanguage)).font(
+                    .system(size: 8, weight: .bold, design: .rounded)
+                ).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7)
                 Spacer()
-                Text(date, format: Date.FormatStyle().day().month(.abbreviated))
-                    .font(.system(size: 8, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                Text(date, format: Date.FormatStyle().day().month(.abbreviated)).font(
+                    .system(size: 8, weight: .semibold, design: .rounded)
+                ).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7)
             }
-
             if let data {
                 VStack(spacing: 2) {
                     ForEach(data.times) { prayer in
@@ -3473,33 +3279,27 @@ struct SmallPrayerTimesFace: View {
                                     ? prayer.name.arabic : prayer.name.english.uppercased()
                             )
                             .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.yellow)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundStyle(.yellow).lineLimit(1).minimumScaleFactor(0.7).frame(
+                                maxWidth: .infinity, alignment: .leading)
                             Text(
                                 NoorPrayerTimeFormatter.format(
-                                    prayer.time, timeFormat: timeFormat, locale: locale
-                                )
+                                    prayer.time, timeFormat: timeFormat, locale: locale)
                             )
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                             .foregroundStyle(.white)
                         }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4).padding(.horizontal, 6)
                         .background(Color.white.opacity(0.04))
                         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                     }
                 }
             } else {
-                Text(AppStrings.t("location_needed", appLanguage))
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .padding(.vertical, 8)
+                Text(AppStrings.t("location_needed", appLanguage)).font(
+                    .system(size: 9, weight: .semibold, design: .rounded)
+                ).foregroundStyle(.white.opacity(0.6)).padding(.vertical, 8)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top).padding(8)
     }
 }
 
@@ -3510,7 +3310,6 @@ struct NextPrayerFace: View {
     private var locale: Locale {
         appLanguage == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
     }
-
     private var timeFormat: NoorTimeFormatSetting {
         NoorTimeFormatSetting.fromStorage(
             NoorSharedDefaults.shared.string(forKey: NoorSharedKeys.timeFormat))
@@ -3524,48 +3323,41 @@ struct NextPrayerFace: View {
         let nextTime = next?.time
 
         VStack(spacing: 20) {
-            Text(AppStrings.t("label_next_prayer", appLanguage))
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
-
+            Text(AppStrings.t("label_next_prayer", appLanguage)).font(
+                .system(size: 12, weight: .bold, design: .rounded)
+            ).foregroundStyle(.white.opacity(0.6))
             if let nextPrayer, let nextTime {
-                Text(nextPrayer.arabic)
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                Text(nextPrayer.arabic).font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundStyle(.yellow)
-                Text(nextPrayer.english.uppercased())
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-
+                Text(nextPrayer.english.uppercased()).font(
+                    .system(size: 16, weight: .bold, design: .rounded)
+                ).foregroundStyle(.white)
                 VStack(spacing: 8) {
                     Text(
                         NoorPrayerTimeFormatter.format(
                             nextTime, timeFormat: timeFormat, locale: locale)
-                    )
-                    .font(.system(size: 48, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(.white)
+                    ).font(.system(size: 48, weight: .heavy, design: .monospaced)).foregroundStyle(
+                        .white)
                     HStack(spacing: 4) {
-                        Text(AppStrings.t("label_in", appLanguage))
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.6))
-                        Text(countdown(to: nextTime, now: prayerModel.now))
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .contentTransition(.numericText(countsDown: true))
+                        Text(AppStrings.t("label_in", appLanguage)).font(
+                            .system(size: 12, weight: .semibold, design: .rounded)
+                        ).foregroundStyle(.white.opacity(0.6))
+                        Text(countdown(to: nextTime, now: prayerModel.now)).font(
+                            .system(size: 14, weight: .bold, design: .rounded)
+                        ).monospacedDigit().contentTransition(.numericText(countsDown: true))
                             .foregroundStyle(.yellow)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-                    .background(Color.white.opacity(0.06))
-                    .clipShape(Capsule())
+                    .padding(.horizontal, 16).padding(.vertical, 6).background(
+                        Color.white.opacity(0.06)
+                    ).clipShape(Capsule())
                 }
             } else {
-                Text(AppStrings.t("location_needed", appLanguage))
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
+                Text(AppStrings.t("location_needed", appLanguage)).font(
+                    .system(size: 13, weight: .semibold, design: .rounded)
+                ).foregroundStyle(.white.opacity(0.6))
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .frame(maxWidth: .infinity).padding(.vertical, 24)
     }
 
     private func countdown(to date: Date, now: Date) -> String {
@@ -3573,10 +3365,7 @@ struct NextPrayerFace: View {
         let hours = Int(interval) / 3600
         let minutes = (Int(interval) % 3600) / 60
         let seconds = Int(interval) % 60
-
-        if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
-        }
+        if hours > 0 { return String(format: "%d:%02d:%02d", hours, minutes, seconds) }
         return String(format: "%02d:%02d", minutes, seconds)
     }
 }
@@ -3592,18 +3381,15 @@ struct PrayerProgressFace: View {
 
         ZStack {
             Circle().stroke(Color.white.opacity(0.1), lineWidth: 10)
-            Circle()
-                .trim(from: 0, to: progress)
+            Circle().trim(from: 0, to: progress)
                 .stroke(Color.yellow, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             VStack(spacing: 2) {
-                Text("\(completed)/5")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .contentTransition(.numericText())
-                Text(AppStrings.t("label_prayers", appLanguage))
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
+                Text("\(completed)/5").font(.system(size: 32, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white).contentTransition(.numericText())
+                Text(AppStrings.t("label_prayers", appLanguage)).font(
+                    .system(size: 10, weight: .semibold, design: .rounded)
+                ).foregroundStyle(.white.opacity(0.6))
             }
         }
         .frame(width: 140, height: 140)
@@ -3618,22 +3404,19 @@ struct PrayerTimelineFace: View {
     private var visiblePrayers: [NoorPrayerTime] {
         (prayerModel.data?.times ?? []).filter { $0.name != .sunrise }
     }
-
     private var timeFormat: NoorTimeFormatSetting {
         NoorTimeFormatSetting.fromStorage(
             NoorSharedDefaults.shared.string(forKey: NoorSharedKeys.timeFormat))
     }
-
     private var locale: Locale {
         appLanguage == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
     }
 
     var body: some View {
         VStack(spacing: 16) {
-            Text(AppStrings.t("label_timeline", appLanguage))
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
-
+            Text(AppStrings.t("label_timeline", appLanguage)).font(
+                .system(size: 14, weight: .bold, design: .rounded)
+            ).foregroundStyle(.white.opacity(0.6))
             VStack(spacing: 0) {
                 ForEach(Array(visiblePrayers.enumerated()), id: \.offset) { index, prayer in
                     let isPast = prayer.time <= prayerModel.now
@@ -3643,29 +3426,23 @@ struct PrayerTimelineFace: View {
                                 prayer.time, timeFormat: timeFormat, locale: locale)
                         )
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
-                        .foregroundStyle(isPast ? .white.opacity(0.5) : .white)
-                        .frame(width: 70, alignment: .trailing)
-
+                        .foregroundStyle(isPast ? .white.opacity(0.5) : .white).frame(
+                            width: 70, alignment: .trailing)
                         VStack(spacing: 0) {
-                            Circle()
-                                .fill(isPast ? Color.yellow.opacity(0.5) : Color.yellow)
-                                .frame(width: isPast ? 10 : 14, height: isPast ? 10 : 14)
+                            Circle().fill(isPast ? Color.yellow.opacity(0.5) : Color.yellow).frame(
+                                width: isPast ? 10 : 14, height: isPast ? 10 : 14)
                             if index < visiblePrayers.count - 1 {
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.1))
-                                    .frame(width: 2, height: 40)
+                                Rectangle().fill(Color.white.opacity(0.1)).frame(
+                                    width: 2, height: 40)
                             }
                         }
-
-                        Text(prayer.name.english.uppercased())
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundStyle(isPast ? .white.opacity(0.5) : .white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
+                        Text(prayer.name.english.uppercased()).font(
+                            .system(size: 16, weight: .bold, design: .rounded)
+                        ).foregroundStyle(isPast ? .white.opacity(0.5) : .white).frame(
+                            maxWidth: .infinity, alignment: .leading)
                         if isPast {
-                            Text("✓")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(.yellow.opacity(0.5))
+                            Text("✓").font(.system(size: 14, weight: .bold)).foregroundStyle(
+                                .yellow.opacity(0.5))
                         }
                     }
                 }
@@ -3684,40 +3461,32 @@ struct QiblaFacePreview: View {
             if let direction = direction {
                 ZStack {
                     NoorDialBackground(size: 140)
-
                     ForEach(0..<12) { i in
                         let angle = Double(i) * 30.0
                         let isNorth = i == 0
                         VStack {
-                            Text(isNorth ? "N" : "")
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
-                                .foregroundStyle(isNorth ? .yellow : .white)
-                            Rectangle()
-                                .fill(isNorth ? .yellow : .white.opacity(0.5))
-                                .frame(width: isNorth ? 2 : 1, height: 9)
+                            Text(isNorth ? "N" : "").font(
+                                .system(size: 13, weight: .bold, design: .rounded)
+                            ).foregroundStyle(isNorth ? .yellow : .white)
+                            Rectangle().fill(isNorth ? .yellow : .white.opacity(0.5)).frame(
+                                width: isNorth ? 2 : 1, height: 9)
                             Spacer()
                         }
                         .rotationEffect(.degrees(angle))
                     }
                     .frame(width: 140, height: 140)
-
                     VStack(spacing: 0) {
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: 22, weight: .bold))
+                        Image(systemName: "arrow.up").font(.system(size: 22, weight: .bold))
                             .foregroundStyle(.yellow)
-                        Circle()
-                            .fill(.yellow)
-                            .frame(width: 7, height: 7)
+                        Circle().fill(.yellow).frame(width: 7, height: 7)
                     }
-                    .rotationEffect(.degrees(direction))
-                    .shadow(color: .yellow.opacity(0.5), radius: 8)
-
+                    .rotationEffect(.degrees(direction)).shadow(
+                        color: .yellow.opacity(0.5), radius: 8)
                     VStack {
-                        Text("\(Int(direction.rounded()))°")
-                            .font(.system(size: 19, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-                        Text("QIBLA")
-                            .font(.system(size: 9, weight: .semibold, design: .rounded))
+                        Text("\(Int(direction.rounded()))°").font(
+                            .system(size: 19, weight: .bold, design: .rounded)
+                        ).foregroundStyle(.white)
+                        Text("QIBLA").font(.system(size: 9, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white.opacity(0.7))
                     }
                 }
@@ -3727,7 +3496,6 @@ struct QiblaFacePreview: View {
         }
         .frame(width: 140, height: 140)
         .onAppear(perform: calculateQibla)
-
         .onChange(of: prayerModel.locationName) { _ in calculateQibla() }
     }
 
@@ -3735,40 +3503,36 @@ struct QiblaFacePreview: View {
         let defaults = NoorSharedDefaults.shared
         let lat = defaults.double(forKey: NoorSharedKeys.lastLatitude)
         let lon = defaults.double(forKey: NoorSharedKeys.lastLongitude)
-
         if lat != 0 || lon != 0 {
-            let coordinates = Coordinates(latitude: lat, longitude: lon)
-            self.direction = Qibla(coordinates: coordinates).direction
+            self.direction =
+                Qibla(coordinates: Coordinates(latitude: lat, longitude: lon)).direction
         } else {
             self.direction = nil
         }
     }
 }
 
-// MARK: - Weather Cards (unchanged)
+// MARK: - Weather Cards
 struct WeatherDetailFace: View {
     @ObservedObject var model: WeatherViewModel
     @Environment(\.appLanguage) private var appLanguage
 
-    private var unit: NoorTemperatureUnit {
-        model.unit
+    private var unit: NoorTemperatureUnit { model.unit }
 
-    }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(
                     model.snapshot == nil
                         ? "—"
-                        : (NoorSharedDefaults.shared.string(
-                            forKey: NoorSharedKeys.lastLocationName) ?? "—")
+                        : (NoorSharedDefaults.shared.string(forKey: NoorSharedKeys.lastLocationName)
+                            ?? "—")
                 )
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.7))
+                .font(.system(size: 12, weight: .semibold, design: .rounded)).foregroundStyle(
+                    .white.opacity(0.7))
                 Spacer()
                 if let snapshot = model.snapshot {
-                    Image(systemName: snapshot.symbolName)
-                        .font(.system(size: 22, weight: .regular))
+                    Image(systemName: snapshot.symbolName).font(.system(size: 22, weight: .regular))
                         .foregroundStyle(NoorDesignSystem.textPrimary)
                 }
             }
@@ -3778,34 +3542,32 @@ struct WeatherDetailFace: View {
                         NoorTemperatureFormatter.format($0.temperatureC, unit: unit)
                     } ?? "--"
                 )
-                .font(.system(size: 42, weight: .heavy, design: .rounded))
-                .foregroundStyle(NoorDesignSystem.accentGold)
+                .font(.system(size: 42, weight: .heavy, design: .rounded)).foregroundStyle(
+                    NoorDesignSystem.accentGold)
                 Spacer()
-                if let snapshot = model.snapshot, let high = snapshot.highC,
-                    let low = snapshot.lowC
+                if let snapshot = model.snapshot, let high = snapshot.highC, let low = snapshot.lowC
                 {
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("H: " + NoorTemperatureFormatter.format(high, unit: unit))
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundStyle(NoorDesignSystem.textSecondary)
-                        Text("L: " + NoorTemperatureFormatter.format(low, unit: unit))
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundStyle(NoorDesignSystem.textSecondary)
+                        Text("H: " + NoorTemperatureFormatter.format(high, unit: unit)).font(
+                            .system(size: 10, weight: .semibold, design: .rounded)
+                        ).foregroundStyle(NoorDesignSystem.textSecondary)
+                        Text("L: " + NoorTemperatureFormatter.format(low, unit: unit)).font(
+                            .system(size: 10, weight: .semibold, design: .rounded)
+                        ).foregroundStyle(NoorDesignSystem.textSecondary)
                     }
                 }
             }
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(Date(), style: .time)
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
-                        .foregroundStyle(NoorDesignSystem.textPrimary)
-                    Text(Date.now, format: Date.FormatStyle().day().month().year())
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundStyle(NoorDesignSystem.textTertiary)
+                    Text(Date(), style: .time).font(
+                        .system(size: 22, weight: .bold, design: .rounded)
+                    ).foregroundStyle(NoorDesignSystem.textPrimary)
+                    Text(Date.now, format: Date.FormatStyle().day().month().year()).font(
+                        .system(size: 11, weight: .semibold, design: .rounded)
+                    ).foregroundStyle(NoorDesignSystem.textTertiary)
                 }
                 Spacer()
-                Text("Updated now")
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                Text("Updated now").font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundStyle(NoorDesignSystem.textTertiary)
             }
         }
@@ -3815,28 +3577,22 @@ struct WeatherDetailFace: View {
 
 struct WeatherSimpleFace: View {
     @ObservedObject var model: WeatherViewModel
-
-    private var unit: NoorTemperatureUnit {
-        model.unit
-    }
-
+    private var unit: NoorTemperatureUnit { model.unit }
     var body: some View {
         VStack(spacing: 8) {
             if let snapshot = model.snapshot {
-                Image(systemName: snapshot.symbolName)
-                    .font(.system(size: 26, weight: .regular))
+                Image(systemName: snapshot.symbolName).font(.system(size: 26, weight: .regular))
                     .foregroundStyle(NoorDesignSystem.textPrimary)
             }
             Text(
-                model.snapshot.map {
-                    NoorTemperatureFormatter.format($0.temperatureC, unit: unit)
-                } ?? "--"
+                model.snapshot.map { NoorTemperatureFormatter.format($0.temperatureC, unit: unit) }
+                    ?? "--"
             )
-            .font(.system(size: 38, weight: .heavy, design: .rounded))
-            .foregroundStyle(NoorDesignSystem.accentGold)
-            Text(model.snapshot?.condition ?? "Weather")
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .foregroundStyle(NoorDesignSystem.textSecondary)
+            .font(.system(size: 38, weight: .heavy, design: .rounded)).foregroundStyle(
+                NoorDesignSystem.accentGold)
+            Text(model.snapshot?.condition ?? "Weather").font(
+                .system(size: 11, weight: .semibold, design: .rounded)
+            ).foregroundStyle(NoorDesignSystem.textSecondary)
         }
         .frame(width: 140, height: 140)
     }
@@ -3844,40 +3600,33 @@ struct WeatherSimpleFace: View {
 
 struct WeatherCompactFace: View {
     @ObservedObject var model: WeatherViewModel
-
-    private var unit: NoorTemperatureUnit {
-        model.unit
-    }
-
+    private var unit: NoorTemperatureUnit { model.unit }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 if let snapshot = model.snapshot {
-                    Image(systemName: snapshot.symbolName)
-                        .font(.system(size: 18, weight: .regular))
+                    Image(systemName: snapshot.symbolName).font(.system(size: 18, weight: .regular))
                         .foregroundStyle(NoorDesignSystem.textPrimary)
                 }
                 Text(
-                    NoorSharedDefaults.shared.string(forKey: NoorSharedKeys.lastLocationName)
-                        ?? "—"
+                    NoorSharedDefaults.shared.string(forKey: NoorSharedKeys.lastLocationName) ?? "—"
                 )
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .foregroundStyle(NoorDesignSystem.textSecondary)
+                .font(.system(size: 11, weight: .semibold, design: .rounded)).foregroundStyle(
+                    NoorDesignSystem.textSecondary)
             }
             Text(
-                model.snapshot.map {
-                    NoorTemperatureFormatter.format($0.temperatureC, unit: unit)
-                } ?? "--"
+                model.snapshot.map { NoorTemperatureFormatter.format($0.temperatureC, unit: unit) }
+                    ?? "--"
             )
-            .font(.system(size: 36, weight: .heavy, design: .rounded))
-            .foregroundStyle(NoorDesignSystem.accentGold)
+            .font(.system(size: 36, weight: .heavy, design: .rounded)).foregroundStyle(
+                NoorDesignSystem.accentGold)
             if let snapshot = model.snapshot, let high = snapshot.highC, let low = snapshot.lowC {
                 Text(
                     "H: " + NoorTemperatureFormatter.format(high, unit: unit) + "  L: "
                         + NoorTemperatureFormatter.format(low, unit: unit)
                 )
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(NoorDesignSystem.textSecondary)
+                .font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(
+                    NoorDesignSystem.textSecondary)
             }
             Spacer()
         }
@@ -3888,11 +3637,7 @@ struct WeatherCompactFace: View {
 struct WeatherThuluthFace: View {
     @ObservedObject var model: WeatherViewModel
     @Environment(\.appLanguage) private var appLanguage
-
-    private var unit: NoorTemperatureUnit {
-        model.unit
-    }
-
+    private var unit: NoorTemperatureUnit { model.unit }
     private var locale: Locale {
         appLanguage == .arabic ? Locale(identifier: "ar") : Locale(identifier: "en")
     }
@@ -3902,15 +3647,13 @@ struct WeatherThuluthFace: View {
             let w = geo.size.width
             let h = geo.size.height
             let scale = min(w / 310.0, h / 146.0)
-
             HStack(alignment: .center, spacing: 12 * scale) {
                 VStack(alignment: .leading, spacing: 4 * scale) {
                     if let snapshot = model.snapshot {
                         HStack(spacing: 5 * scale) {
-                            Image(systemName: snapshot.symbolName)
-                                .font(.system(size: 36 * scale, weight: .regular))
-                                .foregroundStyle(NoorDesignSystem.textPrimary)
-
+                            Image(systemName: snapshot.symbolName).font(
+                                .system(size: 36 * scale, weight: .regular)
+                            ).foregroundStyle(NoorDesignSystem.textPrimary)
                             Text(
                                 model.snapshot.map {
                                     NoorTemperatureFormatter.format($0.temperatureC, unit: unit)
@@ -3920,19 +3663,15 @@ struct WeatherThuluthFace: View {
                             .foregroundStyle(NoorDesignSystem.accentGold)
                         }
                     } else {
-                        Text("--")
-                            .font(.system(size: 24 * scale, weight: .heavy, design: .rounded))
+                        Text("--").font(.system(size: 24 * scale, weight: .heavy, design: .rounded))
                             .foregroundStyle(NoorDesignSystem.accentGold)
                     }
-
                     VStack(alignment: .leading, spacing: 2 * scale) {
                         if let snapshot = model.snapshot {
-                            Text(snapshot.condition)
-                                .font(
-                                    .system(size: 11 * scale, weight: .semibold, design: .rounded)
-                                )
-                                .foregroundStyle(NoorDesignSystem.textSecondary)
-                                .lineLimit(1).minimumScaleFactor(0.8)
+                            Text(snapshot.condition).font(
+                                .system(size: 11 * scale, weight: .semibold, design: .rounded)
+                            ).foregroundStyle(NoorDesignSystem.textSecondary).lineLimit(1)
+                                .minimumScaleFactor(0.8)
                         }
                         if let snapshot = model.snapshot, let high = snapshot.highC,
                             let low = snapshot.lowC
@@ -3946,42 +3685,34 @@ struct WeatherThuluthFace: View {
                         }
                     }
                 }
-
                 Spacer()
-
                 VStack(alignment: .trailing, spacing: 2 * scale) {
                     Text(
                         NoorSharedDefaults.shared.string(forKey: NoorSharedKeys.lastLocationName)
                             ?? "—"
                     )
                     .font(.system(size: 11 * scale, weight: .bold, design: .rounded))
-                    .foregroundStyle(NoorDesignSystem.textSecondary)
-                    .lineLimit(1)
-
+                    .foregroundStyle(NoorDesignSystem.textSecondary).lineLimit(1)
                     Text(weekdayNameFull(Date(), locale: locale))
-                        .font(.custom("DecoType Thuluth", size: 18 * scale))
-                        .foregroundStyle(NoorDesignSystem.textPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-
+                        .font(.custom("DecoType Thuluth", size: 18 * scale)).foregroundStyle(
+                            NoorDesignSystem.textPrimary
+                        ).lineLimit(1).minimumScaleFactor(0.7)
                     Spacer().frame(height: 4 * scale)
-
-                    Text(Date(), style: .time)
-                        .font(.system(size: 14 * scale, weight: .bold, design: .rounded))
-                        .foregroundStyle(NoorDesignSystem.textPrimary)
-                    Text(Date.now, format: Date.FormatStyle().day().month())
-                        .font(.system(size: 10 * scale, weight: .semibold, design: .rounded))
-                        .foregroundStyle(NoorDesignSystem.textTertiary)
+                    Text(Date(), style: .time).font(
+                        .system(size: 14 * scale, weight: .bold, design: .rounded)
+                    ).foregroundStyle(NoorDesignSystem.textPrimary)
+                    Text(Date.now, format: Date.FormatStyle().day().month()).font(
+                        .system(size: 10 * scale, weight: .semibold, design: .rounded)
+                    ).foregroundStyle(NoorDesignSystem.textTertiary)
                 }
             }
-            .padding(.horizontal, 14 * scale)
-            .padding(.vertical, 10 * scale)
+            .padding(.horizontal, 14 * scale).padding(.vertical, 10 * scale)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
 
-// MARK: - QuranVerseCard (unchanged)
+// MARK: - QuranVerseCard
 struct QuranVerseCard: View {
     let verse: QuranVerse
     @State private var isSaved = false
@@ -3991,31 +3722,28 @@ struct QuranVerseCard: View {
         VStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(verse.arabic)
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
-                    .foregroundColor(.yellow)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .multilineTextAlignment(.trailing)
-
+                    .font(.system(size: 20, weight: .semibold, design: .rounded)).foregroundColor(
+                        .yellow
+                    )
+                    .fixedSize(horizontal: false, vertical: true).frame(
+                        maxWidth: .infinity, alignment: .trailing
+                    ).multilineTextAlignment(.trailing)
                 Text("\"\(verse.translation)\"")
-                    .font(.system(size: 14, weight: .regular, design: .rounded))
-                    .foregroundColor(.white)
+                    .font(.system(size: 14, weight: .regular, design: .rounded)).foregroundColor(
+                        .white
+                    )
                     .fixedSize(horizontal: false, vertical: true)
-
                 Spacer()
-
                 HStack {
-                    Text(verse.surah.uppercased())
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.6))
+                    Text(verse.surah.uppercased()).font(
+                        .system(size: 12, weight: .semibold, design: .rounded)
+                    ).foregroundColor(.white.opacity(0.6))
                     Spacer()
-                    Text(verse.ayah)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    Text(verse.ayah).font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundColor(.white.opacity(0.6))
                 }
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, minHeight: 170)
+            .padding(20).frame(maxWidth: .infinity, minHeight: 170)
             .background(
                 LinearGradient(
                     colors: [Color(white: 0.1), Color(white: 0.05)], startPoint: .topLeading,
@@ -4027,10 +3755,9 @@ struct QuranVerseCard: View {
                     Color.white.opacity(0.08), lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.6), radius: 24, x: 0, y: 12)
-
-            Text("\(verse.surah) \(verse.ayah)")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
+            Text("\(verse.surah) \(verse.ayah)").font(
+                .system(size: 12, weight: .medium, design: .rounded)
+            ).foregroundStyle(.white.opacity(0.6))
         }
     }
 }
@@ -4038,18 +3765,16 @@ struct QuranVerseCard: View {
 struct QiblaNotAvailableView: View {
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: "location.slash.fill")
-                .font(.system(size: 24))
-                .foregroundStyle(.white.opacity(0.5))
-            Text("Set Location in Settings")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
-                .multilineTextAlignment(.center)
+            Image(systemName: "location.slash.fill").font(.system(size: 24)).foregroundStyle(
+                .white.opacity(0.5))
+            Text("Set Location in Settings").font(
+                .system(size: 12, weight: .medium, design: .rounded)
+            ).foregroundStyle(.white.opacity(0.6)).multilineTextAlignment(.center)
         }
     }
 }
 
-// MARK: - Helpers (unchanged)
+// MARK: - Helpers
 func monthName(_ date: Date) -> String {
     let f = DateFormatter()
     f.setLocalizedDateFormatFromTemplate("MMMM")
@@ -4106,11 +3831,7 @@ private func clockAngles(from date: Date) -> (hour: Double, minute: Double, seco
     let preciseMinute = minute + preciseSecond / 60
     let preciseHour = (hour.truncatingRemainder(dividingBy: 12)) + preciseMinute / 60
 
-    let hourAngle = preciseHour / 12 * 360
-    let minuteAngle = preciseMinute / 60 * 360
-    let secondAngle = preciseSecond / 60 * 360
-
-    return (hourAngle, minuteAngle, secondAngle)
+    return (preciseHour / 12 * 360, preciseMinute / 60 * 360, preciseSecond / 60 * 360)
 }
 
 #if DEBUG
