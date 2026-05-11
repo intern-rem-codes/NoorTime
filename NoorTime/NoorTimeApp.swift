@@ -9,6 +9,9 @@ import SwiftUI
 
 @main
 struct NoorTimeApp: App {
+    init() {
+        ArabicTypography.registerFontIfNeeded()
+    }
     var body: some Scene {
         WindowGroup {
             ContentView()

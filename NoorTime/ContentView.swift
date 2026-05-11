@@ -2192,25 +2192,19 @@ struct ContentView: View {
         }
         .frame(height: 56)
         .padding(.horizontal, 12)
-        .background {
-            if isScrolled {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        .background(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.white.opacity(isScrolled ? 0.10 : 0.07))
+                .frame(height: 26)
+                .blur(radius: 10)
+                .mask(
+                    LinearGradient(
+                        colors: [Color.black, Color.black.opacity(0.0)],
+                        startPoint: .bottom,
+                        endPoint: .top
                     )
-                    .overlay(alignment: .bottom) {
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.16), Color.clear],
-                            startPoint: .bottom, endPoint: .top
-                        )
-                        .frame(height: 18)
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    }
-                    .shadow(color: .black.opacity(0.22), radius: 10, x: 0, y: 6)
-                    .transition(.opacity)
-            }
+                )
+                .allowsHitTesting(false)
         }
         .animation(.easeInOut(duration: 0.2), value: isScrolled)
     }
@@ -2224,6 +2218,9 @@ struct ContentView: View {
                     .foregroundStyle(.white.opacity(0.8))
                     .frame(maxWidth: .infinity).padding(.vertical, 4)
                 VStack(spacing: 20) {
+                    Card(title: AppStrings.t("card_ayah_ticker", appLang)) {
+                        QuranTickerCard(animated: false)
+                    }
                     ForEach(quranVerses) { verse in QuranVerseCard(verse: verse) }
                 }
             }
@@ -2371,21 +2368,20 @@ private struct DigitalAllSectionView: View {
             Card(title: AppStrings.t("card_luminous_digital", appLang)) {
                 DigitalBoldFace().frame(height: 150)
             }
-            Card(title: AppStrings.t("card_calendar_duo", appLang)) {
-                DayDateGridCard().frame(height: 150)
+            Card(title: AppStrings.t("card_digital_colon", appLang)) {
+                DigitalColonFace().frame(height: 150)
             }
-            Card(title: AppStrings.t("card_ayah_ticker", appLang)) { QuranTickerCard() }
+            Card(title: AppStrings.t("card_luminous_digital_inverted", appLang)) {
+                DigitalBoldInvertedFace().frame(height: 150)
+            }
+            Card(title: AppStrings.t("card_digital_panel", appLang)) {
+                DigitalPanelFace().frame(height: 150)
+            }
             Card(title: AppStrings.t("card_minimal_clock", appLang)) {
                 DigitalMinimalFace().frame(height: 150)
             }
             Card(title: AppStrings.t("card_dual_line_time", appLang)) {
                 DualLineTimeFace().frame(height: 150)
-            }
-            Card(title: AppStrings.t("card_gregorian", appLang)) {
-                GregorianCompactCalendarCard().frame(height: 150)
-            }
-            Card(title: AppStrings.t("card_hijri", appLang)) {
-                HijriCompactCalendarCard().frame(height: 150)
             }
         }
     }
@@ -2398,24 +2394,20 @@ private struct DigitalFilterContentView: View {
             Card(title: AppStrings.t("card_luminous_digital", appLang)) {
                 DigitalBoldFace().frame(height: 150)
             }
-            Card(title: AppStrings.t("card_calendar_duo", appLang)) {
-                DayDateGridCard().frame(height: 150)
+            Card(title: AppStrings.t("card_digital_colon", appLang)) {
+                DigitalColonFace().frame(height: 150)
             }
-            Card(title: AppStrings.t("card_ayah_ticker", appLang)) { QuranTickerCard() }
+            Card(title: AppStrings.t("card_luminous_digital_inverted", appLang)) {
+                DigitalBoldInvertedFace().frame(height: 150)
+            }
+            Card(title: AppStrings.t("card_digital_panel", appLang)) {
+                DigitalPanelFace().frame(height: 150)
+            }
             Card(title: AppStrings.t("card_minimal_clock", appLang)) {
                 DigitalMinimalFace().frame(height: 150)
             }
             Card(title: AppStrings.t("card_dual_line_time", appLang)) {
                 DualLineTimeFace().frame(height: 150)
-            }
-            Text(AppStrings.t("celestial_calendars", appLang))
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white).padding(.top, 4)
-            Card(title: AppStrings.t("card_gregorian", appLang)) {
-                GregorianCompactCalendarCard().frame(height: 150)
-            }
-            Card(title: AppStrings.t("card_hijri", appLang)) {
-                HijriCompactCalendarCard().frame(height: 150)
             }
         }
     }
@@ -2423,8 +2415,12 @@ private struct DigitalFilterContentView: View {
 
 private struct QuranVersesContentView: View {
     let quranVerses: [QuranVerse]
+    @Environment(\.appLanguage) private var appLanguage
     var body: some View {
         VStack(spacing: 20) {
+            Card(title: AppStrings.t("card_ayah_ticker", appLanguage)) {
+                QuranTickerCard(animated: false)
+            }
             ForEach(quranVerses) { verse in QuranVerseCard(verse: verse) }
         }
     }
@@ -2448,6 +2444,21 @@ private struct DateFilterContentView: View {
         VStack(spacing: 20) {
             Card(title: AppStrings.t("card_today_date", appLang)) { TodayDateFace() }
             Card(title: AppStrings.t("card_dual_calendar", appLang)) { DualCalendarFace() }
+            Card(title: "Arabic Weekday") { ArabicWeekdayFace() }
+            Card(title: "Arabic Today") { ArabicTodayFace() }
+            Card(title: "Arabic Month Poster") { ArabicMonthPosterFace() }
+            Card(title: "Arabic Month Tile (Small)") { ArabicMonthTileFace() }.frame(height: 170)
+            Card(title: "Month Poster (EN)") { EnglishMonthPosterFace() }
+            Card(title: "Month Poster (AR)") { ArabicMonthPosterLargeFace() }
+            Card(title: AppStrings.t("card_calendar_duo", appLang)) {
+                DayDateGridCard().frame(height: 150)
+            }
+            Card(title: AppStrings.t("card_gregorian", appLang)) {
+                GregorianCompactCalendarCard().frame(height: 150)
+            }
+            Card(title: AppStrings.t("card_hijri", appLang)) {
+                HijriCompactCalendarCard().frame(height: 150)
+            }
             Card(title: AppStrings.t("card_week_overview", appLang)) {
                 ThuluthWidgetPreview(family: .medium)
             }
@@ -2905,6 +2916,116 @@ struct DigitalBoldFace: View {
     }
 }
 
+struct DigitalBoldInvertedFace: View {
+    @State private var now: Date = .now
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.appLanguage) private var appLanguage
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            let comps = Calendar.current.dateComponents([.hour, .minute], from: now)
+            let hour = comps.hour ?? 0
+            let minute = comps.minute ?? 0
+            VStack(alignment: .leading, spacing: -2) {
+                Text(String(format: "%02d", hour)).font(
+                    .system(size: 64, weight: .heavy, design: .rounded)
+                ).foregroundStyle(.white)
+                Text(String(format: "%02d", minute)).font(
+                    .system(size: 56, weight: .bold, design: .rounded)
+                ).foregroundStyle(Color.yellow)
+            }
+            Text(AppStrings.t("label_luminous_digital", appLanguage))
+                .font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(
+                    .white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .onReceive(timer) { now = $0 }
+    }
+}
+
+struct DigitalColonFace: View {
+    @State private var now: Date = .now
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.appLanguage) private var appLanguage
+    var body: some View {
+        let comps = Calendar.current.dateComponents([.hour, .minute, .second], from: now)
+        let hour = comps.hour ?? 0
+        let minute = comps.minute ?? 0
+        let second = comps.second ?? 0
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(String(format: "%02d", hour))
+                    .font(.system(size: 60, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Color.yellow)
+                Text(":")
+                    .font(.system(size: 52, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.65))
+                    .offset(y: -2)
+                Text(String(format: "%02d", minute))
+                    .font(.system(size: 56, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+            HStack(spacing: 8) {
+                Text(String(format: "%02d", second))
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.white.opacity(0.8))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(Capsule())
+                Text(weekdayName(now).uppercased())
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+            Text(AppStrings.t("label_luminous_digital", appLanguage))
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .onReceive(timer) { now = $0 }
+    }
+}
+
+struct DigitalPanelFace: View {
+    @State private var now: Date = .now
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.appLanguage) private var appLanguage
+    var body: some View {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: now)
+        let hour = comps.hour ?? 0
+        let minute = comps.minute ?? 0
+        return ZStack {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+            VStack(alignment: .leading, spacing: 10) {
+                Text(weekdayNameFull(now).uppercased())
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.55))
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(String(format: "%02d", hour))
+                        .font(.system(size: 58, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(String(format: "%02d", minute))
+                        .font(.system(size: 58, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Color.yellow)
+                }
+                Text(AppStrings.t("label_luminous_digital", appLanguage))
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onReceive(timer) { now = $0 }
+    }
+}
+
 struct DayDateGridCard: View {
     var body: some View {
         HStack(spacing: 12) {
@@ -2931,15 +3052,18 @@ struct CapsuleLabel: View {
     let text: String
     let color: Color
     let textColor: Color
+    @Environment(\.appLanguage) private var appLanguage
     var body: some View {
-        Text(text).font(.system(size: 14, weight: .bold, design: .rounded)).foregroundStyle(
-            textColor
-        )
-        .padding(.horizontal, 14).padding(.vertical, 8).background(color).clipShape(Capsule())
+        Text(text)
+            .font(ArabicTypography.dayFont(size: 14, appLanguage: appLanguage, weight: .bold))
+            .foregroundStyle(textColor)
+            .padding(.horizontal, 14).padding(.vertical, 8).background(color).clipShape(Capsule())
     }
 }
 
 struct QuranTickerCard: View {
+    let animated: Bool
+    init(animated: Bool = true) { self.animated = animated }
     @State private var phase: CGFloat = 0
     var body: some View {
         ZStack {
@@ -2955,9 +3079,17 @@ struct QuranTickerCard: View {
                 })
             Text("سبحان الله وبحمده، سبحان الله العظيم")
                 .font(.custom("DecoType Thuluth", size: 32)).foregroundStyle(.yellow)
-                .offset(x: phase)
-                .animation(.linear(duration: 8).repeatForever(autoreverses: false), value: phase)
-                .onAppear { phase = -40 }
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .offset(x: animated ? phase : 0)
+                .animation(
+                    animated ? .linear(duration: 8).repeatForever(autoreverses: false) : .none,
+                    value: phase
+                )
+                .onAppear {
+                    guard animated else { return }
+                    phase = -40
+                }
         }
         .frame(maxWidth: .infinity).frame(height: 150)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -3054,18 +3186,19 @@ struct HijriCompactCalendarCard: View {
 struct TodayDateFace: View {
     @State private var now: Date = .now
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.appLanguage) private var appLanguage
     var body: some View {
         let calendar = Calendar.current
         let day = calendar.component(.day, from: now)
         VStack(spacing: 16) {
-            Text(weekdayNameFull(now).uppercased()).font(
-                .system(size: 14, weight: .bold, design: .rounded)
-            ).foregroundStyle(.white.opacity(0.6))
+            Text(weekdayNameFull(now).uppercased())
+                .font(ArabicTypography.dayFont(size: 14, appLanguage: appLanguage, weight: .bold))
+                .foregroundStyle(.white.opacity(0.6))
             Text("\(day)").font(.system(size: 88, weight: .heavy, design: .rounded))
                 .foregroundStyle(.yellow)
-            Text(monthName(now).uppercased()).font(
-                .system(size: 18, weight: .bold, design: .rounded)
-            ).foregroundStyle(.white)
+            Text(monthName(now).uppercased())
+                .font(ArabicTypography.dayFont(size: 18, appLanguage: appLanguage, weight: .bold))
+                .foregroundStyle(.white)
             Text(yearNumber(now)).font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.6))
         }
@@ -3077,6 +3210,7 @@ struct TodayDateFace: View {
 struct DualCalendarFace: View {
     @State private var now: Date = .now
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.appLanguage) private var appLanguage
     var body: some View {
         HStack(spacing: 16) {
             VStack(spacing: 8) {
@@ -3084,9 +3218,12 @@ struct DualCalendarFace: View {
                     .foregroundStyle(.white.opacity(0.5))
                 Text(dayNumber(now)).font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundStyle(.yellow)
-                Text(shortMonth(now).uppercased()).font(
-                    .system(size: 14, weight: .semibold, design: .rounded)
-                ).foregroundStyle(.white)
+                Text(shortMonth(now).uppercased())
+                    .font(
+                        ArabicTypography.dayFont(
+                            size: 14, appLanguage: appLanguage, weight: .semibold)
+                    )
+                    .foregroundStyle(.white)
                 Text(yearNumber(now)).font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -3102,9 +3239,14 @@ struct DualCalendarFace: View {
                 Text(arabicDigits(comps.day ?? 0)).font(
                     .system(size: 48, weight: .bold, design: .rounded)
                 ).foregroundStyle(.white)
-                Text(hijriMonthName(now)).font(
-                    .system(size: 14, weight: .semibold, design: .rounded)
-                ).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                Text(hijriMonthName(now))
+                    .font(
+                        ArabicTypography.dayFont(
+                            size: 14, appLanguage: appLanguage, weight: .semibold)
+                    )
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 Text(arabicDigits(comps.year ?? 0)).font(
                     .system(size: 12, weight: .medium, design: .rounded)
                 ).foregroundStyle(.white.opacity(0.6))
@@ -3113,6 +3255,185 @@ struct DualCalendarFace: View {
             .background(Color.white.opacity(0.04)).clipShape(
                 RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
+        .onReceive(timer) { now = $0 }
+    }
+}
+
+struct ArabicWeekdayFace: View {
+    @State private var now: Date = .now
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.appLanguage) private var appLanguage
+
+    var body: some View {
+        let locale = Locale(identifier: "ar")
+        let weekday = weekdayNameFull(now, locale: locale)
+        return Text(appLanguage == .arabic ? weekday : weekdayNameFull(now))
+            .font(ArabicTypography.dayFont(size: 60, appLanguage: appLanguage, weight: .regular))
+            .foregroundStyle(.yellow)
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onReceive(timer) { now = $0 }
+    }
+}
+
+struct ArabicTodayFace: View {
+    @State private var now: Date = .now
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.appLanguage) private var appLanguage
+
+    var body: some View {
+        let locale = Locale(identifier: "ar")
+        let weekday = weekdayNameFull(now, locale: locale)
+        return VStack(spacing: 6) {
+            Text(appLanguage == .arabic ? weekday : weekdayNameFull(now))
+                .font(
+                    ArabicTypography.dayFont(size: 36, appLanguage: appLanguage, weight: .regular)
+                )
+                .foregroundStyle(.yellow)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .multilineTextAlignment(.center)
+            Text(dayNumber(now))
+                .font(.system(size: 72, weight: .heavy, design: .rounded))
+                .foregroundStyle(.yellow)
+                .opacity(0.18)
+                .overlay {
+                    Text(monthName(now).uppercased())
+                        .font(.system(size: 40, weight: .bold, design: .serif))
+                        .foregroundStyle(.white.opacity(0.95))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onReceive(timer) { now = $0 }
+    }
+}
+
+struct ArabicMonthPosterFace: View {
+    @State private var now: Date = .now
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.appLanguage) private var appLanguage
+
+    var body: some View {
+        let day = dayNumber(now)
+        let monthArabic = monthName(now, locale: Locale(identifier: "ar"))
+        let monthEnglish = monthName(now, locale: Locale(identifier: "en")).uppercased()
+        return ZStack {
+            Text(day)
+                .font(.system(size: 120, weight: .heavy, design: .rounded))
+                .foregroundStyle(.yellow.opacity(0.10))
+                .offset(y: -10)
+            if appLanguage == .arabic {
+                Text(monthArabic)
+                    .font(
+                        ArabicTypography.dayFont(
+                            size: 62, appLanguage: appLanguage, weight: .regular)
+                    )
+                    .foregroundStyle(.white.opacity(0.95))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+            } else {
+                Text(monthEnglish)
+                    .font(.system(size: 54, weight: .bold, design: .serif))
+                    .foregroundStyle(.white.opacity(0.95))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(12)
+        .onReceive(timer) { now = $0 }
+    }
+}
+
+struct ArabicMonthTileFace: View {
+    @State private var now: Date = .now
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.appLanguage) private var appLanguage
+
+    var body: some View {
+        let day = dayNumber(now)
+        let monthArabic = monthName(now, locale: Locale(identifier: "ar"))
+        return ZStack {
+            Text(day)
+                .font(.system(size: 120, weight: .heavy, design: .rounded))
+                .foregroundStyle(.yellow.opacity(0.10))
+                .offset(x: -8, y: -6)
+            Text(monthArabic)
+                .font(
+                    ArabicTypography.dayFont(size: 54, appLanguage: appLanguage, weight: .regular)
+                )
+                .foregroundStyle(.white.opacity(0.95))
+                .lineLimit(1)
+                .minimumScaleFactor(0.55)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 10)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(10)
+        .onReceive(timer) { now = $0 }
+    }
+}
+
+struct EnglishMonthPosterFace: View {
+    @State private var now: Date = .now
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        let day = dayNumber(now)
+        let month = monthName(now, locale: Locale(identifier: "en")).uppercased()
+        return ZStack {
+            Text(day)
+                .font(.system(size: 160, weight: .heavy, design: .rounded))
+                .foregroundStyle(.yellow.opacity(0.14))
+                .offset(y: -18)
+            Text(month)
+                .font(.system(size: 78, weight: .bold, design: .serif))
+                .foregroundStyle(.white.opacity(0.95))
+                .tracking(6)
+                .lineLimit(1)
+                .minimumScaleFactor(0.55)
+                .padding(.horizontal, 18)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 28)
+        .onReceive(timer) { now = $0 }
+    }
+}
+
+struct ArabicMonthPosterLargeFace: View {
+    @State private var now: Date = .now
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @Environment(\.appLanguage) private var appLanguage
+
+    var body: some View {
+        let day = dayNumber(now)
+        let monthArabic = monthName(now, locale: Locale(identifier: "ar"))
+        return ZStack {
+            Text(day)
+                .font(.system(size: 160, weight: .heavy, design: .rounded))
+                .foregroundStyle(.yellow.opacity(0.14))
+                .offset(y: -18)
+            Text(monthArabic)
+                .font(
+                    ArabicTypography.dayFont(size: 90, appLanguage: appLanguage, weight: .regular)
+                )
+                .foregroundStyle(.white.opacity(0.95))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 18)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 28)
         .onReceive(timer) { now = $0 }
     }
 }
@@ -3722,9 +4043,8 @@ struct QuranVerseCard: View {
         VStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(verse.arabic)
-                    .font(.system(size: 20, weight: .semibold, design: .rounded)).foregroundColor(
-                        .yellow
-                    )
+                    .font(ArabicTypography.quranFont(size: 26, appLanguage: appLanguage))
+                    .foregroundColor(.yellow)
                     .fixedSize(horizontal: false, vertical: true).frame(
                         maxWidth: .infinity, alignment: .trailing
                     ).multilineTextAlignment(.trailing)
@@ -3775,13 +4095,15 @@ struct QiblaNotAvailableView: View {
 }
 
 // MARK: - Helpers
-func monthName(_ date: Date) -> String {
+func monthName(_ date: Date, locale: Locale = .current) -> String {
     let f = DateFormatter()
+    f.locale = locale
     f.setLocalizedDateFormatFromTemplate("MMMM")
     return f.string(from: date)
 }
-func shortMonth(_ date: Date) -> String {
+func shortMonth(_ date: Date, locale: Locale = .current) -> String {
     let f = DateFormatter()
+    f.locale = locale
     f.setLocalizedDateFormatFromTemplate("MMM")
     return f.string(from: date)
 }
